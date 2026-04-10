@@ -1,41 +1,1683 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1a1a18">
-  <title>Shift Pay Tracker</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .shell {
-      text-align: center;
-      color: #1a1a18;
-    }
-    .shell h1 { font-size: 24px; margin-bottom: 8px; }
-    .shell p  { font-size: 14px; color: #888; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a18">
+<title>Shift Pay Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f0;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+    min-height: 100vh;
+  }
+  .app {
+    max-width: 420px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.25rem;
+    border: 0.5px solid #e0e0d8;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 0.5px solid #e8e8e0;
+  }
+  .nav-title { font-size: 17px; font-weight: 600; color: #1a1a18; }
+  .nav-tabs {
+    display: flex;
+    gap: 3px;
+    background: #f0f0ea;
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .tab {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #888880;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .tab.active {
+    background: #ffffff;
+    color: #1a1a18;
+    font-weight: 500;
+    border: 0.5px solid #e0e0d8;
+  }
+
+  /* ── Metric cards ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+  .metric {
+    background: #f5f5f0;
+    border-radius: 10px;
+    padding: 0.75rem;
+  }
+  .metric-label { font-size: 11px; color: #888880; margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 600; color: #1a1a18; }
+  .metric-value span { font-size: 13px; font-weight: 400; }
+  .metric-value.green { color: #0F6E56; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  /* ── Calendar card ── */
+  .card {
+    background: #ffffff;
+    border: 0.5px solid #e8e8e0;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cal-nav { font-size: 18px; color: #888880; cursor: pointer; padding: 0 6px; line-height: 1; }
+  .cal-month { font-size: 14px; font-weight: 500; color: #1a1a18; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow { font-size: 10px; color: #aaa; text-align: center; padding: 4px 0; }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #888880;
+    border: 0.5px solid transparent;
+    cursor: pointer;
+  }
+  .cal-day.worked  { background: #E1F5EE; color: #085041; border-color: #5DCAA5; }
+  .cal-day.ot      { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
+  .cal-day.early   { background: #FAECE7; color: #4A1B0C; border-color: #F0997B; }
+  .cal-day.gave    { background: #FBEAF0; color: #4B1528; border-color: #ED93B1; }
+  .cal-day.pickup  { background: #E6F1FB; color: #042C53; border-color: #85B7EB; }
+  .cal-day.today   { font-weight: 600; box-shadow: 0 0 0 2px #1a1a18 inset; }
+  .cal-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; margin-top: 1px; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 0.5px solid #e8e8e0;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #888880; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Pay screen ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .pay-period {
+    border-radius: 14px;
+    border: 0.5px solid #e8e8e0;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .pay-period-header {
+    background: #f5f5f0;
+    padding: 9px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .pay-period-title { font-size: 13px; font-weight: 500; color: #1a1a18; }
+  .pay-period-date { font-size: 11px; color: #888880; }
+  .pay-rows { padding: 0 14px; }
+  .pay-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 0.5px solid #f0f0ea;
+    font-size: 13px;
+  }
+  .pay-row:last-child { border-bottom: none; }
+  .pay-row-label { color: #666660; }
+  .pay-row-value { color: #1a1a18; font-weight: 500; }
+  .pay-row-value.deduct { color: #993C1D; }
+  .pay-row-value.net { color: #0F6E56; font-size: 15px; }
+  .pay-row.total .pay-row-label { font-weight: 500; color: #1a1a18; }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Settings ── */
+  .settings-group {
+    border: 0.5px solid #e8e8e0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .settings-group-header {
+    background: #f5f5f0;
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888880;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 0.5px solid #e8e8e0;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 0.5px solid #f0f0ea;
+    gap: 12px;
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row-label {
+    font-size: 13px;
+    color: #1a1a18;
+    flex: 1;
+    min-width: 0;
+  }
+  .settings-row-sub {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 2px;
+  }
+  .settings-input {
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 7px;
+    padding: 5px 8px;
+    width: 90px;
+    text-align: right;
+  }
+  .settings-input:focus {
+    outline: none;
+    border-color: #1a1a18;
+    background: #fff;
+  }
+  .settings-input.wide { width: 130px; }
+  .input-prefix {
+    display: flex;
+    align-items: center;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .input-prefix:focus-within {
+    border-color: #1a1a18;
+    background: #fff;
+  }
+  .input-prefix span {
+    font-size: 13px;
+    color: #888880;
+    padding: 5px 0 5px 8px;
+    background: transparent;
+    line-height: 1;
+  }
+  .input-prefix input {
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: transparent;
+    border: none;
+    padding: 5px 8px 5px 3px;
+    width: 72px;
+    text-align: right;
+  }
+  .input-prefix input:focus { outline: none; }
+  .input-suffix {
+    display: flex;
+    align-items: center;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .input-suffix:focus-within {
+    border-color: #1a1a18;
+    background: #fff;
+  }
+  .input-suffix input {
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: transparent;
+    border: none;
+    padding: 5px 3px 5px 8px;
+    width: 52px;
+    text-align: right;
+  }
+  .input-suffix input:focus { outline: none; }
+  .input-suffix span {
+    font-size: 13px;
+    color: #888880;
+    padding: 5px 8px 5px 2px;
+  }
+  .bid-day-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    border-bottom: 0.5px solid #f0f0ea;
+    gap: 10px;
+  }
+  .bid-day-row:last-child { border-bottom: none; }
+  .bid-day-name {
+    font-size: 13px;
+    color: #1a1a18;
+    width: 36px;
+    flex-shrink: 0;
+  }
+  .bid-day-name.off { color: #bbb; }
+  .bid-time-input {
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 7px;
+    padding: 4px 8px;
+    width: 90px;
+    text-align: center;
+  }
+  .bid-time-input:focus { outline: none; border-color: #1a1a18; background: #fff; }
+  .bid-time-input.off-day { color: #ccc; background: #fafafa; border-color: #eee; }
+  .bid-sub-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 14px 4px;
+    border-bottom: 0.5px solid #f0f0ea;
+    background: #fafafa;
+  }
+  .settings-save-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+    gap: 10px;
+  }
+  .save-btn {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 11px 0;
+    border-radius: 10px;
+    border: none;
+    background: #1a1a18;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .save-btn:active { opacity: 0.7; }
+  .reset-btn {
+    font-size: 13px;
+    font-family: inherit;
+    padding: 11px 16px;
+    border-radius: 10px;
+    border: 0.5px solid #d8d8d0;
+    background: transparent;
+    color: #888880;
+    cursor: pointer;
+  }
+  .withholding-note {
+    font-size: 11px;
+    color: #633806;
+    background: #FAEEDA;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 0 0 1rem 0;
+    line-height: 1.5;
+  }
+
+  /* ── Day detail bottom sheet ── */
+  .day-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .day-sheet-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .day-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    padding: 0 0 env(safe-area-inset-bottom, 12px);
+    z-index: 101;
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .day-sheet.open {
+    transform: translateX(-50%) translateY(0);
+  }
+  .day-sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: #e0e0d8;
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+  .day-sheet-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 14px 18px 10px;
+    border-bottom: 0.5px solid #f0f0ea;
+  }
+  .day-sheet-date {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a18;
+    line-height: 1.2;
+  }
+  .day-sheet-dow {
+    font-size: 12px;
+    color: #888880;
+    margin-top: 2px;
+  }
+  .day-sheet-close {
+    font-size: 18px;
+    color: #aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    margin-top: -2px;
+  }
+  .day-sheet-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin: 10px 18px 0;
+    border: 0.5px solid transparent;
+  }
+  .day-sheet-badge.worked  { background:#E1F5EE; color:#085041; border-color:#5DCAA5; }
+  .day-sheet-badge.ot      { background:#FAEEDA; color:#633806; border-color:#EF9F27; }
+  .day-sheet-badge.dt      { background:#FAEEDA; color:#633806; border-color:#EF9F27; }
+  .day-sheet-badge.early   { background:#FAECE7; color:#4A1B0C; border-color:#F0997B; }
+  .day-sheet-badge.gave    { background:#FBEAF0; color:#4B1528; border-color:#ED93B1; }
+  .day-sheet-badge.pickup  { background:#E6F1FB; color:#042C53; border-color:#85B7EB; }
+  .day-sheet-badge.off     { background:#f5f5f0; color:#888880; border-color:#e0e0d8; }
+  .day-sheet-badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .day-sheet-rows {
+    padding: 6px 18px 16px;
+  }
+  .day-sheet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 0.5px solid #f5f5f0;
+    font-size: 13px;
+  }
+  .day-sheet-row:last-child { border-bottom: none; }
+  .day-sheet-row-label { color: #666660; }
+  .day-sheet-row-value { color: #1a1a18; font-weight: 500; }
+  .day-sheet-row-value.green { color: #0F6E56; font-size: 15px; }
+  .day-sheet-row-value.muted { color: #aaa; font-weight: 400; }
+  .day-sheet-source {
+    font-size: 11px;
+    color: #aaa;
+    padding: 0 18px 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .day-sheet-source-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #1D9E75;
+    flex-shrink: 0;
+  }
+  .day-sheet-source-dot.inferred { background: #ccc; }
+
+  /* ── Entry controls (day sheet) — placeholder for Step 5 ── */
+  .day-sheet-entry {
+    border-top: 0.5px solid #f0f0ea;
+    padding: 12px 18px 4px;
+  }
+  .entry-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .entry-chip {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid #e0e0d8;
+    background: #f5f5f0;
+    color: #888880;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .entry-chip.ot     { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
+  .entry-chip.dt     { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
+  .entry-chip.early  { background: #FAECE7; color: #712B13; border-color: #F0997B; }
+  .entry-chip.gave   { background: #FBEAF0; color: #72243E; border-color: #ED93B1; }
+  .entry-chip.pickup { background: #E6F1FB; color: #0C447C; border-color: #85B7EB; }
+  .entry-chip.active { box-shadow: 0 0 0 2px currentColor inset; font-weight: 600; }
+  .entry-hrs-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .entry-hrs-input {
+    flex: 1;
+    font-size: 13px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 0.5px solid #d8d8d0;
+    background: #f5f5f0;
+    color: #1a1a18;
+    font-family: inherit;
+  }
+  .entry-hrs-input:focus { outline: none; border-color: #1a1a18; background: #fff; }
+  .entry-save-btn {
+    font-size: 13px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #1a1a18;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    font-family: inherit;
+  }
+  .entry-clear-btn {
+    font-size: 12px;
+    color: #aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 4px 0;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a1a18;
+    color: #fff;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+    z-index: 999;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Settings footer ── */
+  .settings-footer {
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+    font-size: 12px;
+    color: #bbb;
+  }
+  .settings-footer a {
+    color: #aaa;
+    text-decoration: none;
+  }
+  .settings-footer a:hover { color: #666; }
+</style>
 </head>
 <body>
-  <div class="shell">
-    <h1>Shift Pay Tracker</h1>
-    <p>Coming soon.</p>
+<div class="app">
+
+  <div class="nav">
+    <span class="nav-title">Shift pay</span>
+    <div class="nav-tabs">
+      <button class="tab active" onclick="switchTab('calendar')">Calendar</button>
+      <button class="tab" onclick="switchTab('pay')">Pay</button>
+      <button class="tab" onclick="switchTab('settings')">Settings</button>
+    </div>
   </div>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('SW registered'))
-        .catch(err => console.error('SW error:', err));
+
+  <!-- ═══════════════════════════════════════════ CALENDAR SCREEN -->
+  <div id="screen-calendar" class="screen active">
+
+    <!-- Metric cards -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">This period</div>
+        <div class="metric-value" id="metric-hours">— <span>hrs</span></div>
+        <div class="metric-sub" id="metric-period-label">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Est. net</div>
+        <div class="metric-value green" id="metric-net">—</div>
+        <div class="metric-sub" id="metric-pay-date">—</div>
+      </div>
+    </div>
+
+    <!-- Calendar card -->
+    <div class="card">
+      <div class="cal-header">
+        <span class="cal-nav" onclick="changeMonth(-1)">&#8249;</span>
+        <span class="cal-month" id="cal-month-label">—</span>
+        <span class="cal-nav" onclick="changeMonth(1)">&#8250;</span>
+      </div>
+      <div class="cal-grid" id="cal-grid">
+        <div class="cal-dow">Su</div><div class="cal-dow">Mo</div><div class="cal-dow">Tu</div>
+        <div class="cal-dow">We</div><div class="cal-dow">Th</div><div class="cal-dow">Fr</div>
+        <div class="cal-dow">Sa</div>
+        <!-- Days rendered by JS -->
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75;"></div>Regular</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#EF9F27;"></div>Overtime</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#D85A30;"></div>Left early</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#D4537E;"></div>Gave away</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD;"></div>Picked up</div>
+      </div>
+    </div>
+
+  </div><!-- /screen-calendar -->
+
+  <!-- ═══════════════════════════════════════════ PAY SCREEN -->
+  <div id="screen-pay" class="screen">
+    <div class="section-label">Pay periods — <span id="pay-month-label"></span></div>
+    <div id="pay-periods-container"></div>
+  </div><!-- /screen-pay -->
+
+  <!-- ═══════════════════════════════════════════ SETTINGS SCREEN -->
+  <div id="screen-settings" class="screen">
+
+    <!-- Pay Rates -->
+    <div class="settings-group">
+      <div class="settings-group-header">Pay Rates</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Regular rate</div>
+          <div class="settings-row-sub">Current hourly rate</div>
+        </div>
+        <div class="input-prefix">
+          <span>$</span>
+          <input type="number" id="s-rate-regular" value="" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Previous rate</div>
+          <div class="settings-row-sub">Used for historical periods before rate change</div>
+        </div>
+        <div class="input-prefix">
+          <span>$</span>
+          <input type="number" id="s-rate-regular-old" value="" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Rate change date</div>
+          <div class="settings-row-sub">Shifts on/after this date use current rate</div>
+        </div>
+        <input type="date" id="s-rate-change-date" class="settings-input wide" value="">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">OT multiplier</div>
+          <div class="settings-row-sub">Irregular overtime</div>
+        </div>
+        <div class="input-suffix">
+          <input type="number" id="s-ot-mult" value="" step="0.1" min="1" placeholder="1.5">
+          <span>×</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">DT multiplier</div>
+          <div class="settings-row-sub">Mandatory double time</div>
+        </div>
+        <div class="input-suffix">
+          <input type="number" id="s-dt-mult" value="" step="0.1" min="1" placeholder="2.0">
+          <span>×</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bid Blocks -->
+    <div class="settings-group">
+      <div class="settings-group-header">Bid Blocks</div>
+
+      <!-- Current bid -->
+      <div class="bid-sub-header">Current bid</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Bid start date</div>
+          <div class="settings-row-sub">First Sunday of bid month</div>
+        </div>
+        <input type="date" id="s-bid-curr-start" class="settings-input wide" value="">
+      </div>
+      <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-0" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-1" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-2">Tue</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-2" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-3">Wed</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-3" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-4">Thu</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-4" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-5">Fri</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-5" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-6" value=""></div>
+
+      <!-- Previous bid -->
+      <div class="bid-sub-header" style="margin-top:4px;">Previous bid</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Bid start date</div>
+          <div class="settings-row-sub">Affects dates before current bid start</div>
+        </div>
+        <input type="date" id="s-bid-prev-start" class="settings-input wide" value="">
+      </div>
+      <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-0" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-1" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-2">Tue</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-2" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-3">Wed</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-3" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-4">Thu</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-4" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-5">Fri</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-5" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-6" value=""></div>
+
+      <!-- Next bid -->
+      <div class="bid-sub-header" style="margin-top:12px;">Next bid <span style="font-weight:400;color:#aaa;font-size:11px;">— auto-activates on first Sunday of bid month</span></div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Bid month</div>
+          <div class="settings-row-sub">Enter the month this bid starts (e.g. May 2026)</div>
+        </div>
+        <input type="month" id="s-bid-next-month" class="settings-input wide" value="" placeholder="YYYY-MM">
+      </div>
+      <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-0" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-1" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-2">Tue</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-2" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-3">Wed</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-3" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-4">Thu</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-4" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-5">Fri</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-5" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-6" value=""></div>
+    </div>
+
+    <!-- Pre-Tax Deductions -->
+    <div class="settings-group">
+      <div class="settings-group-header">Pre-Tax Deductions (per period)</div>
+      <div class="settings-row">
+        <div class="settings-row-label">Medical</div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-medical" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Dental</div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-dental" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Vision</div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-vision" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">AD&amp;D (pre-tax)</div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-add" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">401(k) contribution</div>
+          <div class="settings-row-sub">% of gross — scales with pay</div>
+        </div>
+        <div class="input-suffix">
+          <input type="number" id="s-401k-pct" value="" step="0.5" min="0" max="100" placeholder="0">
+          <span>%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- After-Tax Deductions -->
+    <div class="settings-group">
+      <div class="settings-group-header">After-Tax Deductions (per period)</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">401(k) loan payment</div>
+          <div class="settings-row-sub">Fixed repayment — not a contribution</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-401k-loan" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Stock purchase plan</div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-stock" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Union dues</div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-union" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Life ins &amp; other after-tax</div>
+          <div class="settings-row-sub">Combined total of remaining after-tax items</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-other-aftertax" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+    </div>
+
+    <!-- Tax Rates -->
+    <div class="settings-group">
+      <div class="settings-group-header">Tax Rates</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">OASDI (Social Security)</div>
+          <div class="settings-row-sub">Stops at annual wage cap (~$176,100)</div>
+        </div>
+        <div class="input-suffix">
+          <input type="number" id="s-oasdi" value="" step="0.05" min="0" placeholder="6.2">
+          <span>%</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Medicare</div>
+        <div class="input-suffix">
+          <input type="number" id="s-medicare" value="" step="0.05" min="0" placeholder="1.45">
+          <span>%</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">State disability (SDI)</div>
+        <div class="input-suffix">
+          <input type="number" id="s-casdi" value="" step="0.05" min="0" placeholder="1.3">
+          <span>%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withholding Calibration -->
+    <div class="withholding-note">
+      ⚠ Federal and state withholding vary by filing status and W-4 elections. Enter the actual amounts from a recent pay stub — the app will scale them proportionally to your earnings each period.
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-header">Withholding Calibration (per period)</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Federal withholding</div>
+          <div class="settings-row-sub">From a recent stub</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-fed-wh" value="" step="1" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">State withholding</div>
+          <div class="settings-row-sub">From a recent stub</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-ca-wh" value="" step="1" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Gross that generated above amounts</div>
+          <div class="settings-row-sub">Gross pay from same stub period</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-wh-basis" value="" step="1" min="0" placeholder="0.00"></div>
+      </div>
+    </div>
+
+    <div class="settings-save-row">
+      <button class="reset-btn" onclick="resetSettings()">Reset</button>
+      <button class="save-btn" onclick="saveSettings()">Save settings</button>
+    </div>
+
+    <div class="settings-footer">
+      Find this useful? <a href="https://ko-fi.com" target="_blank" rel="noopener">Buy me a coffee ☕</a>
+    </div>
+
+  </div><!-- /screen-settings -->
+
+  <div class="toast" id="toast"></div>
+
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════ DAY DETAIL SHEET -->
+<div class="day-sheet-backdrop" id="day-sheet-backdrop" onclick="closeDayDetail()"></div>
+<div class="day-sheet" id="day-sheet">
+  <div class="day-sheet-handle"></div>
+  <div class="day-sheet-header">
+    <div>
+      <div class="day-sheet-date" id="ds-date">—</div>
+      <div class="day-sheet-dow" id="ds-dow">—</div>
+    </div>
+    <button class="day-sheet-close" onclick="closeDayDetail()">✕</button>
+  </div>
+  <div id="ds-badge" class="day-sheet-badge off">
+    <div class="day-sheet-badge-dot"></div>
+    <span id="ds-badge-text">Off</span>
+  </div>
+  <div class="day-sheet-rows" id="ds-rows"></div>
+  <div class="day-sheet-source" id="ds-source"></div>
+  <!-- Entry controls added in Step 5 -->
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
+const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS DEFAULTS — all empty/zero for new users
+// ═══════════════════════════════════════════════════════════════
+const DEFAULTS = {
+  'rate-regular':       0,
+  'rate-regular-old':   0,
+  'rate-change-date':   '',    // 'YYYY-MM-DD' — blank = no rate change
+  'ot-mult':            1.5,
+  'dt-mult':            2.0,
+
+  // Bid block — current
+  'bid-curr-start':     '',
+  'bid-curr-times':     ['','','','','','',''],
+
+  // Bid block — previous
+  'bid-prev-start':     '',
+  'bid-prev-times':     ['','','','','','',''],
+
+  // Bid block — next (auto-promotes on first Sunday of bid month)
+  'bid-next-month':     '',
+  'bid-next-times':     ['','','','','','',''],
+
+  // Pre-tax deductions (per period)
+  'medical':            0,
+  'dental':             0,
+  'vision':             0,
+  'add':                0,
+  '401k-pct':           0,
+
+  // After-tax deductions (per period)
+  '401k-loan':          0,
+  'stock':              0,
+  'union':              0,
+  'other-aftertax':     0,
+
+  // Tax rates
+  'oasdi':              6.2,
+  'medicare':           1.45,
+  'casdi':              1.3,
+
+  // Withholding calibration
+  'fed-wh':             0,
+  'ca-wh':              0,
+  'wh-basis':           0,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+
+// shiftData: in-memory map of user-entered overrides { 'YYYY-MM-DD': shiftObj }
+// Loaded from localStorage 'shiftpay-shifts' on init and after any write.
+let shiftData = {};
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+// Format "HH:MM" → "4:00 PM"
+function fmtTime(hhmm) {
+  if (!hhmm) return '—';
+  const [h, m] = hhmm.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hr12 = ((h % 12) || 12);
+  return hr12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+}
+
+// Add minutes to "HH:MM" → new "HH:MM" (handles midnight crossover)
+function addMinutes(hhmm, mins) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = (h * 60 + m + Math.round(mins)) % (24 * 60);
+  const nh = Math.floor(total / 60);
+  const nm = total % 60;
+  return String(nh).padStart(2, '0') + ':' + String(nm).padStart(2, '0');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const tabs = { calendar: 0, pay: 1, settings: 2 };
+  document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
+  if (name === 'pay') renderPayScreen();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS: getSettings / loadSettings / saveSettings / resetSettings
+// ═══════════════════════════════════════════════════════════════
+function getSettings() {
+  const saved = JSON.parse(localStorage.getItem('shiftpay-settings') || '{}');
+  const out = {};
+  for (const [k, def] of Object.entries(DEFAULTS)) {
+    if (saved[k] !== undefined) out[k] = saved[k];
+    else out[k] = Array.isArray(def) ? [...def] : def;
+  }
+  return out;
+}
+
+function loadSettings() {
+  const saved = JSON.parse(localStorage.getItem('shiftpay-settings') || '{}');
+
+  // Scalar fields — map key → element id (id = 's-' + key)
+  for (const [key, def] of Object.entries(DEFAULTS)) {
+    if (Array.isArray(def)) continue; // handled below
+    const el = document.getElementById('s-' + key);
+    if (!el) continue;
+    const val = saved[key] !== undefined ? saved[key] : def;
+    // Only set if non-zero / non-empty (keep placeholder visible for blank defaults)
+    if (val !== 0 && val !== '') el.value = val;
+  }
+
+  // Bid block time arrays — 7 inputs per bid (curr / prev / next)
+  for (const bid of ['curr', 'prev', 'next']) {
+    const key   = `bid-${bid}-times`;
+    const times = saved[key] !== undefined ? saved[key] : DEFAULTS[key];
+    for (let i = 0; i < 7; i++) {
+      const el  = document.getElementById(`s-bid-${bid}-times-${i}`);
+      const lbl = document.getElementById(`lbl-${bid}-${i}`);
+      if (!el) continue;
+      const t = Array.isArray(times) ? (times[i] || '') : '';
+      el.value = t;
+      const isOff = t === '';
+      el.classList.toggle('off-day', isOff);
+      if (lbl) lbl.classList.toggle('off', isOff);
     }
-  </script>
+  }
+
+  // Next bid month string
+  const nextMonthEl = document.getElementById('s-bid-next-month');
+  if (nextMonthEl) nextMonthEl.value = saved['bid-next-month'] || '';
+}
+
+function saveSettings() {
+  const data = {};
+
+  // Scalar fields
+  for (const key of Object.keys(DEFAULTS)) {
+    if (Array.isArray(DEFAULTS[key])) continue;
+    const el = document.getElementById('s-' + key);
+    if (!el) continue;
+    if (el.type === 'date' || el.type === 'month') {
+      data[key] = el.value.trim();
+    } else {
+      data[key] = parseFloat(el.value) || 0;
+    }
+  }
+
+  // Bid block time arrays
+  for (const bid of ['curr', 'prev', 'next']) {
+    const times = [];
+    for (let i = 0; i < 7; i++) {
+      const el = document.getElementById(`s-bid-${bid}-times-${i}`);
+      times.push(el ? el.value.trim() : '');
+    }
+    data[`bid-${bid}-times`] = times;
+
+    // Update label styles immediately
+    for (let i = 0; i < 7; i++) {
+      const el  = document.getElementById(`s-bid-${bid}-times-${i}`);
+      const lbl = document.getElementById(`lbl-${bid}-${i}`);
+      if (!el) continue;
+      const isOff = el.value.trim() === '';
+      el.classList.toggle('off-day', isOff);
+      if (lbl) lbl.classList.toggle('off', isOff);
+    }
+  }
+
+  // Next bid month
+  const nextMonthEl = document.getElementById('s-bid-next-month');
+  data['bid-next-month'] = nextMonthEl ? nextMonthEl.value.trim() : '';
+
+  localStorage.setItem('shiftpay-settings', JSON.stringify(data));
+  showToast('Settings saved ✓');
+  renderCalendar();
+  updateMetrics();
+}
+
+function resetSettings() {
+  if (!confirm('Reset all settings to blank? This cannot be undone.')) return;
+  localStorage.removeItem('shiftpay-settings');
+  // Clear all inputs manually
+  document.querySelectorAll('.settings-input, .settings-input.wide, .bid-time-input').forEach(el => {
+    el.value = '';
+  });
+  document.querySelectorAll('.input-prefix input, .input-suffix input').forEach(el => {
+    el.value = '';
+  });
+  loadSettings();
+  showToast('Settings cleared');
+  renderCalendar();
+  updateMetrics();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHIFT DATA: load from localStorage
+// ═══════════════════════════════════════════════════════════════
+function loadShiftData() {
+  const raw = localStorage.getItem('shiftpay-shifts');
+  shiftData = raw ? JSON.parse(raw) : {};
+}
+
+function saveShiftEntry(dateStr, shiftObj) {
+  loadShiftData();
+  shiftData[dateStr] = shiftObj;
+  localStorage.setItem('shiftpay-shifts', JSON.stringify(shiftData));
+}
+
+function clearShiftEntry(dateStr) {
+  loadShiftData();
+  delete shiftData[dateStr];
+  localStorage.setItem('shiftpay-shifts', JSON.stringify(shiftData));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BID BLOCK LOOKUP
+// Returns { isWorkday, startTime } for any 'YYYY-MM-DD' string.
+// Uses current bid if date >= bid-curr-start, else previous bid.
+// ═══════════════════════════════════════════════════════════════
+function getBidForDate(dateStr) {
+  const s         = getSettings();
+  const date      = new Date(dateStr + 'T12:00:00');
+  const currStart = s['bid-curr-start'] ? new Date(s['bid-curr-start'] + 'T12:00:00') : null;
+
+  const times = (currStart && date >= currStart)
+    ? s['bid-curr-times']
+    : s['bid-prev-times'];
+
+  const dow       = date.getDay(); // 0=Sun … 6=Sat
+  const startTime = Array.isArray(times) ? (times[dow] || '') : '';
+  const isWorkday = startTime !== '';
+
+  return { isWorkday, startTime };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MERGED SHIFT MAP
+// User-entered overrides (shiftpay-shifts) win; bid schedule fills blanks.
+// ═══════════════════════════════════════════════════════════════
+function getMergedShifts(startDate, endDate) {
+  const merged = {};
+  const cur = new Date(startDate);
+  while (cur <= endDate) {
+    const dateStr = `${cur.getFullYear()}-${pad2(cur.getMonth()+1)}-${pad2(cur.getDate())}`;
+    if (shiftData[dateStr]) {
+      merged[dateStr] = shiftData[dateStr];
+    } else {
+      const bid = getBidForDate(dateStr);
+      if (bid.isWorkday) {
+        merged[dateStr] = { type: 'worked', otHrs: 0, dtHrs: 0, lwopHrs: 0 };
+      }
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return merged;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAY PERIOD BOUNDS
+// ═══════════════════════════════════════════════════════════════
+function getPayPeriodBounds(year, month, day) {
+  if (day <= 15) {
+    return {
+      start:   new Date(year, month, 1),
+      end:     new Date(year, month, 15),
+      label:   `${MONTH_NAMES[month].slice(0,3)} 1–15`,
+      payDate: `Paid ${MONTH_NAMES[month].slice(0,3)} 20`,
+    };
+  } else {
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const nextMon = MONTH_NAMES[month === 11 ? 0 : month + 1].slice(0,3);
+    return {
+      start:   new Date(year, month, 16),
+      end:     new Date(year, month, lastDay),
+      label:   `${MONTH_NAMES[month].slice(0,3)} 16–${lastDay}`,
+      payDate: `Paid ${nextMon} 5`,
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RATE CHANGE DATE
+// Reads from settings; falls back to a date far in the future
+// (meaning old rate is never used) if not configured.
+// ═══════════════════════════════════════════════════════════════
+function getRateChangeDate() {
+  const s = getSettings();
+  const d = s['rate-change-date'];
+  return d ? new Date(d + 'T12:00:00') : new Date('2099-01-01');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GROSS PAY CALCULATION
+// ═══════════════════════════════════════════════════════════════
+function calcGross(shifts, settings, rateChangeDate) {
+  const regRate = settings['rate-regular']     || 0;
+  const oldRate = settings['rate-regular-old'] || regRate; // fall back to current if not set
+  const otMult  = settings['ot-mult']          || 1.5;
+  const dtMult  = settings['dt-mult']          || 2.0;
+
+  let regHrs = 0, otHrs = 0, dtHrs = 0, gross = 0;
+
+  for (const [dateStr, shift] of Object.entries(shifts)) {
+    if (shift.type === 'gave') continue;
+
+    const date = new Date(dateStr + 'T12:00:00');
+    const rate = date >= rateChangeDate ? regRate : oldRate;
+
+    const bid      = getBidForDate(dateStr);
+    const isOffDay = !bid.isWorkday;
+    const base     = isOffDay ? 0 : PAID_HRS - (shift.lwopHrs || 0);
+    const ot       = shift.otHrs || 0;
+    const dt       = shift.dtHrs || 0;
+
+    gross  += (base * rate) + (ot * rate * otMult) + (dt * rate * dtMult);
+    regHrs += base;
+    otHrs  += ot;
+    dtHrs  += dt;
+  }
+
+  return { gross, regHrs, otHrs, dtHrs };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NET PAY ESTIMATE (for metric cards — quick path)
+// ═══════════════════════════════════════════════════════════════
+function estimateNet(gross, settings) {
+  const s = settings;
+  const preTax  = (s['medical'] || 0) + (s['dental'] || 0) + (s['vision'] || 0)
+                + (s['add'] || 0) + (gross * (s['401k-pct'] || 0) / 100);
+  const taxable = Math.max(0, gross - preTax);
+
+  const basis = s['wh-basis'] || gross || 1;
+  const scale = taxable / basis;
+  const fedWH = (s['fed-wh'] || 0) * scale;
+  const caWH  = (s['ca-wh']  || 0) * scale;
+
+  const oasdi    = taxable * (s['oasdi']   || 0) / 100;
+  const medicare = taxable * (s['medicare'] || 0) / 100;
+  const casdi    = taxable * (s['casdi']    || 0) / 100;
+
+  const afterTax = (s['401k-loan'] || 0) + (s['stock'] || 0)
+                 + (s['union'] || 0) + (s['other-aftertax'] || 0);
+
+  return Math.max(0, gross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FULL BREAKDOWN (for Pay screen — every line item)
+// ═══════════════════════════════════════════════════════════════
+function calcBreakdown(gross, settings) {
+  const s    = settings;
+  const k401 = gross * (s['401k-pct'] || 0) / 100;
+  const preTaxHDV = (s['medical'] || 0) + (s['dental'] || 0)
+                  + (s['vision'] || 0) + (s['add'] || 0);
+  const preTax  = preTaxHDV + k401;
+  const taxable = Math.max(0, gross - preTax);
+
+  const basis = s['wh-basis'] || gross || 1;
+  const scale = taxable / basis;
+  const fedWH = (s['fed-wh'] || 0) * scale;
+  const caWH  = (s['ca-wh']  || 0) * scale;
+
+  const oasdi    = taxable * (s['oasdi']   || 0) / 100;
+  const medicare = taxable * (s['medicare'] || 0) / 100;
+  const casdi    = taxable * (s['casdi']    || 0) / 100;
+
+  const loan     = s['401k-loan']     || 0;
+  const stock    = s['stock']         || 0;
+  const union    = s['union']         || 0;
+  const otherAT  = s['other-aftertax'] || 0;
+  const afterTax = loan + stock + union + otherAT;
+
+  const net = Math.max(0, gross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
+
+  return { gross, preTaxHDV, k401, taxable, fedWH, caWH, oasdi, medicare, casdi,
+           loan, stock, union, otherAT, net };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BID BLOCK AUTO-TRANSITION
+// Runs on every load. If a next bid is set and today >= its first
+// Sunday, promotes: next → current, current → previous, clears next.
+// ═══════════════════════════════════════════════════════════════
+function checkBidTransition() {
+  const saved = JSON.parse(localStorage.getItem('shiftpay-settings') || '{}');
+  const nextMonth = saved['bid-next-month'] || '';
+  if (!nextMonth) return;
+
+  const [year, month] = nextMonth.split('-').map(Number);
+  const firstDay = new Date(year, month - 1, 1);
+  const offset   = (7 - firstDay.getDay()) % 7;
+  const firstSun = new Date(year, month - 1, 1 + offset);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (today < firstSun) return;
+
+  // Promote bids
+  const pad = n => String(n).padStart(2, '0');
+  const nextStart = `${firstSun.getFullYear()}-${pad(firstSun.getMonth()+1)}-${pad(firstSun.getDate())}`;
+
+  saved['bid-prev-start'] = saved['bid-curr-start'] || '';
+  saved['bid-prev-times'] = saved['bid-curr-times'] || ['','','','','','',''];
+  saved['bid-curr-start'] = nextStart;
+  saved['bid-curr-times'] = saved['bid-next-times'] || ['','','','','','',''];
+  saved['bid-next-month'] = '';
+  saved['bid-next-times'] = ['','','','','','',''];
+
+  localStorage.setItem('shiftpay-settings', JSON.stringify(saved));
+  loadSettings();
+
+  showToast(`${MONTH_NAMES[month-1]} bid is now active — previous bid archived ✓`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDAR RENDERER
+// ═══════════════════════════════════════════════════════════════
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0;  calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
+  updateMetrics();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent =
+    MONTH_NAMES[calMonth] + ' ' + calYear;
+
+  const grid  = document.getElementById('cal-grid');
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
+
+  // Remove existing day cells (keep the 7 DOW headers)
+  grid.querySelectorAll('.cal-day').forEach(c => c.remove());
+
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstDow    = new Date(calYear, calMonth, 1).getDay();
+
+  // Leading blank cells
+  for (let i = 0; i < firstDow; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'cal-day';
+    grid.appendChild(blank);
+  }
+
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${pad2(calMonth+1)}-${pad2(d)}`;
+    const override = shiftData[dateStr];
+    const cell     = document.createElement('div');
+
+    let cls = 'cal-day';
+    if (dateStr === todayStr) cls += ' today';
+
+    if (override) {
+      // User-entered override — show with dot (confirmed)
+      const typeMap = { worked: 'worked', ot: 'ot', dt: 'ot', early: 'early', gave: 'gave', pickup: 'pickup' };
+      cls += ' ' + (typeMap[override.type] || 'worked');
+      cell.className = cls;
+      cell.innerHTML = d + '<div class="cal-dot"></div>';
+    } else {
+      // Check bid schedule
+      const bid = getBidForDate(dateStr);
+      if (bid.isWorkday) {
+        cls += ' worked';
+        cell.className = cls;
+        cell.textContent = d; // no dot — bid-inferred
+      } else {
+        cell.className = cls;
+        cell.textContent = d;
+      }
+    }
+
+    cell.addEventListener('click', () => showDayDetail(dateStr));
+    grid.appendChild(cell);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METRIC CARDS
+// ═══════════════════════════════════════════════════════════════
+function updateMetrics() {
+  const settings = getSettings();
+  const today    = new Date();
+
+  const viewDay = (calYear === today.getFullYear() && calMonth === today.getMonth())
+    ? today.getDate() : 1;
+
+  const period = getPayPeriodBounds(calYear, calMonth, viewDay);
+  const periodShifts = getMergedShifts(period.start, period.end);
+
+  document.getElementById('metric-period-label').textContent = period.label;
+  document.getElementById('metric-pay-date').textContent     = period.payDate;
+
+  if (Object.keys(periodShifts).length === 0) {
+    document.getElementById('metric-hours').innerHTML = '— <span>hrs</span>';
+    document.getElementById('metric-net').textContent = '—';
+    return;
+  }
+
+  const rcd = getRateChangeDate();
+  const { gross, regHrs, otHrs, dtHrs } = calcGross(periodShifts, settings, rcd);
+  const totalHrs = regHrs + otHrs + dtHrs;
+  const net = estimateNet(gross, settings);
+
+  document.getElementById('metric-hours').innerHTML = totalHrs.toFixed(1) + ' <span>hrs</span>';
+  document.getElementById('metric-net').textContent = '$' + Math.round(net).toLocaleString();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAY SCREEN
+// ═══════════════════════════════════════════════════════════════
+function renderPayScreen() {
+  const settings  = getSettings();
+  const container = document.getElementById('pay-periods-container');
+  const monthLbl  = document.getElementById('pay-month-label');
+  if (!container) return;
+
+  monthLbl.textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
+
+  const rcd     = getRateChangeDate();
+  const fmt     = n  => '$' + Math.round(Math.abs(n)).toLocaleString();
+  const fmtHrs  = n  => n.toFixed(1) + ' hrs';
+
+  function row(label, value) {
+    return `<div class="pay-row">
+      <span class="pay-row-label">${label}</span>
+      <span class="pay-row-value">${value}</span>
+    </div>`;
+  }
+  function deductRow(label, amount) {
+    return `<div class="pay-row">
+      <span class="pay-row-label">${label}</span>
+      <span class="pay-row-value deduct">−${fmt(amount)}</span>
+    </div>`;
+  }
+
+  function buildPanel(periodNum, startDay, endDay, paidLabel) {
+    const lastDay     = new Date(calYear, calMonth + 1, 0).getDate();
+    const clampedEnd  = Math.min(endDay, lastDay);
+    const pStart      = new Date(calYear, calMonth, startDay);
+    const pEnd        = new Date(calYear, calMonth, clampedEnd);
+    const mon         = MONTH_NAMES[calMonth].slice(0, 3);
+    const title       = `Period ${periodNum} — ${mon} ${startDay}–${clampedEnd}`;
+    const periodShifts = getMergedShifts(pStart, pEnd);
+
+    if (Object.keys(periodShifts).length === 0) {
+      return `<div class="pay-period">
+        <div class="pay-period-header">
+          <span class="pay-period-title">${title}</span>
+          <span class="pay-period-date">${paidLabel}</span>
+        </div>
+        <div class="pay-rows">
+          <div class="pay-row">
+            <span class="pay-row-label" style="color:#aaa;font-style:italic;">No shifts logged yet</span>
+            <span class="pay-row-value">—</span>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const { gross, regHrs, otHrs, dtHrs } = calcGross(periodShifts, settings, rcd);
+    const b = calcBreakdown(gross, settings);
+    const hasOT = otHrs > 0;
+    const hasDT = dtHrs > 0;
+
+    let rows = '';
+    rows += row(`Regular (${fmtHrs(regHrs)})`, fmt(regHrs * (settings['rate-regular'] || 0)));
+    if (hasOT) rows += row(`Overtime (${fmtHrs(otHrs)})`,     fmt(otHrs * (settings['rate-regular'] || 0) * (settings['ot-mult'] || 1.5)));
+    if (hasDT) rows += row(`Double time (${fmtHrs(dtHrs)})`,  fmt(dtHrs * (settings['rate-regular'] || 0) * (settings['dt-mult'] || 2.0)));
+
+    rows += `<div class="pay-row" style="border-top:0.5px solid #e8e8e0;margin-top:2px;padding-top:9px;">
+               <span class="pay-row-label" style="font-weight:500;color:#1a1a18;">Gross pay</span>
+               <span class="pay-row-value">${fmt(b.gross)}</span>
+             </div>`;
+
+    rows += deductRow('Health / Dental / Vision / AD&D', b.preTaxHDV);
+    if (b.k401 > 0) rows += deductRow(`401(k) contribution (${settings['401k-pct']}%)`, b.k401);
+    rows += deductRow('Federal withholding', b.fedWH);
+    rows += deductRow('State withholding', b.caWH);
+    rows += deductRow('OASDI', b.oasdi);
+    rows += deductRow('Medicare', b.medicare);
+    rows += deductRow('State disability (SDI)', b.casdi);
+    if (b.loan    > 0) rows += deductRow('401(k) loan payment', b.loan);
+    if (b.stock   > 0) rows += deductRow('Stock purchase plan', b.stock);
+    if (b.union   > 0) rows += deductRow('Union dues', b.union);
+    if (b.otherAT > 0) rows += deductRow('Life ins & other after-tax', b.otherAT);
+
+    rows += `<div class="pay-row total" style="border-top:0.5px solid #e0e0d8;margin-top:2px;padding-top:9px;">
+               <span class="pay-row-label">Est. net pay</span>
+               <span class="pay-row-value net">${fmt(b.net)}</span>
+             </div>`;
+
+    return `<div class="pay-period">
+      <div class="pay-period-header">
+        <span class="pay-period-title">${title}</span>
+        <span class="pay-period-date">${paidLabel}</span>
+      </div>
+      <div class="pay-rows">${rows}</div>
+    </div>`;
+  }
+
+  const nextMon = MONTH_NAMES[calMonth === 11 ? 0 : calMonth + 1].slice(0, 3);
+  container.innerHTML =
+    buildPanel(1,  1, 15, `Paid ${MONTH_NAMES[calMonth].slice(0,3)} 20`) +
+    buildPanel(2, 16, 31, `Paid ${nextMon} 5`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DAY DETAIL BOTTOM SHEET (read-only — entry controls added Step 5)
+// ═══════════════════════════════════════════════════════════════
+function showDayDetail(dateStr) {
+  const settings = getSettings();
+  const stdHrs   = 8.5; // always display 8.5 scheduled
+  const regRate  = settings['rate-regular']     || 0;
+  const oldRate  = settings['rate-regular-old'] || regRate;
+  const otMult   = settings['ot-mult']          || 1.5;
+  const dtMult   = settings['dt-mult']          || 2.0;
+  const rcd      = getRateChangeDate();
+
+  const date = new Date(dateStr + 'T12:00:00');
+  const rate = date >= rcd ? regRate : oldRate;
+
+  const DOW_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MON_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  document.getElementById('ds-date').textContent =
+    MON_SHORT[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+  document.getElementById('ds-dow').textContent = DOW_NAMES[date.getDay()];
+
+  const override       = shiftData[dateStr];
+  const bid            = getBidForDate(dateStr);
+  const isUserEntered  = !!override;
+  const shift = override || (bid.isWorkday ? { type: 'worked', otHrs: 0, dtHrs: 0, lwopHrs: 0 } : null);
+
+  // Badge
+  const badge     = document.getElementById('ds-badge');
+  const badgeTxt  = document.getElementById('ds-badge-text');
+  const badgeLabels = {
+    worked: 'Regular shift', ot: 'Overtime shift', dt: 'Double time shift',
+    early: 'Left early (LWOP)', gave: 'Gave shift away', pickup: 'Picked up shift', off: 'Day off',
+  };
+  const shiftType = shift ? shift.type : 'off';
+  badge.className     = 'day-sheet-badge ' + shiftType;
+  badgeTxt.textContent = badgeLabels[shiftType] || shiftType;
+
+  // Rows
+  const rows = document.getElementById('ds-rows');
+  rows.innerHTML = '';
+
+  function addRow(label, value, cls) {
+    rows.innerHTML += `<div class="day-sheet-row">
+      <span class="day-sheet-row-label">${label}</span>
+      <span class="day-sheet-row-value${cls ? ' ' + cls : ''}">${value}</span>
+    </div>`;
+  }
+
+  if (!shift || shiftType === 'off') {
+    addRow('Status', 'Not scheduled', 'muted');
+  } else if (shiftType === 'gave') {
+    if (bid.startTime) {
+      addRow('Scheduled start', fmtTime(bid.startTime), '');
+      addRow('Scheduled end',   fmtTime(addMinutes(bid.startTime, stdHrs * 60)), '');
+    }
+    addRow('Pay', '$0 — shift given away', 'muted');
+  } else {
+    if (bid.startTime) {
+      addRow('Shift start', fmtTime(bid.startTime), '');
+      addRow('Shift end',   fmtTime(addMinutes(bid.startTime, stdHrs * 60)), '');
+    }
+
+    const isOffDay = !bid.isWorkday;
+    const baseHrs  = isOffDay ? 0 : PAID_HRS - (shift.lwopHrs || 0);
+    const otHrs    = shift.otHrs || 0;
+    const dtHrs    = shift.dtHrs || 0;
+
+    if (isOffDay) {
+      addRow('Shift type', 'Off-day override', 'muted');
+      if (otHrs > 0) addRow('Overtime hours',     otHrs.toFixed(1) + ' hrs @ ' + otMult + 'x', '');
+      if (dtHrs > 0) addRow('Double time hours',  dtHrs.toFixed(1) + ' hrs @ ' + dtMult + 'x', '');
+    } else {
+      addRow('Scheduled hours', stdHrs.toFixed(1) + ' hrs (8.0 paid, 0.5 unpaid break)', 'muted');
+      if (shift.lwopHrs > 0) {
+        addRow('Paid hours', baseHrs.toFixed(1) + ' hrs (LWOP deducted)', '');
+        addRow('LWOP hours', '−' + shift.lwopHrs.toFixed(1) + ' hrs unpaid', 'muted');
+      } else {
+        addRow('Paid hours', baseHrs.toFixed(1) + ' hrs', '');
+      }
+      if (otHrs > 0) addRow('Overtime hours',    '+' + otHrs.toFixed(1) + ' hrs @ ' + otMult + 'x', '');
+      if (dtHrs > 0) addRow('Double time hours', '+' + dtHrs.toFixed(1) + ' hrs @ ' + dtMult + 'x', '');
+    }
+
+    const rateLabel = (date >= rcd && settings['rate-change-date'])
+      ? '$' + regRate.toFixed(2) + '/hr'
+      : (settings['rate-change-date'] ? '$' + oldRate.toFixed(2) + '/hr (pre-rate change)' : '$' + regRate.toFixed(2) + '/hr');
+    addRow('Pay rate', rateLabel, '');
+
+    const dayGross = (baseHrs * rate) + (otHrs * rate * otMult) + (dtHrs * rate * dtMult);
+    addRow('Est. gross', '$' + dayGross.toFixed(2), 'green');
+  }
+
+  // Source indicator
+  const src = document.getElementById('ds-source');
+  if (shiftType === 'off' && !isUserEntered) {
+    src.innerHTML = '';
+  } else if (isUserEntered) {
+    src.innerHTML = '<div class="day-sheet-source-dot"></div>Logged by you';
+  } else {
+    src.innerHTML = '<div class="day-sheet-source-dot inferred"></div>Inferred from bid schedule';
+  }
+
+  document.getElementById('day-sheet-backdrop').classList.add('open');
+  document.getElementById('day-sheet').classList.add('open');
+}
+
+function closeDayDetail() {
+  document.getElementById('day-sheet-backdrop').classList.remove('open');
+  document.getElementById('day-sheet').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+(function init() {
+  loadShiftData();
+  loadSettings();
+  checkBidTransition();
+  renderCalendar();
+  updateMetrics();
+
+  // PWA service worker registration
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(err => console.warn('SW registration failed:', err));
+  }
+})();
+</script>
 </body>
 </html>
