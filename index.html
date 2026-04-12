@@ -485,71 +485,125 @@
   }
   .day-sheet-source-dot.inferred { background: #ccc; }
 
-  /* ── Entry controls (day sheet) — placeholder for Step 5 ── */
+  /* ── Day sheet entry controls ── */
   .day-sheet-entry {
     border-top: 0.5px solid #f0f0ea;
-    padding: 12px 18px 4px;
+    padding: 12px 18px 20px;
   }
-  .entry-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+  .entry-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     margin-bottom: 10px;
   }
-  .entry-chip {
-    font-size: 12px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 0.5px solid #e0e0d8;
-    background: #f5f5f0;
-    color: #888880;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .entry-chip.ot     { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
-  .entry-chip.dt     { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
-  .entry-chip.early  { background: #FAECE7; color: #712B13; border-color: #F0997B; }
-  .entry-chip.gave   { background: #FBEAF0; color: #72243E; border-color: #ED93B1; }
-  .entry-chip.pickup { background: #E6F1FB; color: #0C447C; border-color: #85B7EB; }
-  .entry-chip.active { box-shadow: 0 0 0 2px currentColor inset; font-weight: 600; }
-  .entry-hrs-row {
+  .entry-field-row {
     display: flex;
-    gap: 8px;
     align-items: center;
-    margin-bottom: 10px;
+    justify-content: space-between;
+    padding: 5px 0;
+    gap: 10px;
   }
-  .entry-hrs-input {
-    flex: 1;
+  .entry-label {
     font-size: 13px;
-    padding: 7px 10px;
-    border-radius: 8px;
-    border: 0.5px solid #d8d8d0;
-    background: #f5f5f0;
     color: #1a1a18;
-    font-family: inherit;
+    flex: 1;
   }
-  .entry-hrs-input:focus { outline: none; border-color: #1a1a18; background: #fff; }
-  .entry-save-btn {
-    font-size: 13px;
-    padding: 7px 16px;
+  .entry-label-sub {
+    font-size: 11px;
+    color: #aaa;
+    font-weight: 400;
+  }
+  .entry-input-wrap {
+    display: flex;
+    align-items: center;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
     border-radius: 8px;
+    overflow: hidden;
+  }
+  .entry-input-wrap:focus-within {
+    border-color: #1a1a18;
+    background: #fff;
+  }
+  .entry-input-wrap input {
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: transparent;
+    border: none;
+    padding: 6px 4px 6px 10px;
+    width: 52px;
+    text-align: right;
+  }
+  .entry-input-wrap input:focus { outline: none; }
+  .entry-unit {
+    font-size: 12px;
+    color: #888880;
+    padding: 6px 8px 6px 3px;
+  }
+  .entry-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    gap: 8px;
+  }
+  .entry-save-btn {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 10px 0;
+    border-radius: 10px;
     border: none;
     background: #1a1a18;
     color: #fff;
     cursor: pointer;
-    font-weight: 500;
-    font-family: inherit;
   }
+  .entry-save-btn:active { opacity: 0.7; }
   .entry-clear-btn {
     font-size: 12px;
+    font-family: inherit;
     color: #aaa;
     background: none;
-    border: none;
+    border: 0.5px solid #e0e0d8;
+    border-radius: 10px;
     cursor: pointer;
-    font-family: inherit;
-    padding: 4px 0;
+    padding: 10px 14px;
+  }
+  .entry-clear-btn:active { opacity: 0.7; }
+
+  /* ── Format toggle ── */
+  .entry-format-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 8px;
-    display: block;
+  }
+  .entry-format-toggle {
+    display: flex;
+    gap: 3px;
+    background: #f0f0ea;
+    border-radius: 7px;
+    padding: 3px;
+  }
+  .entry-fmt-btn {
+    font-size: 11px;
+    font-family: inherit;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: #888880;
+    cursor: pointer;
+  }
+  .entry-fmt-btn.active {
+    background: #fff;
+    color: #1a1a18;
+    font-weight: 600;
+    border: 0.5px solid #e0e0d8;
   }
 
   /* ── Toast ── */
@@ -1392,7 +1446,63 @@
   </div>
   <div class="day-sheet-rows" id="ds-rows"></div>
   <div class="day-sheet-source" id="ds-source"></div>
-  <!-- Entry controls added in Step 5 -->
+
+  <!-- Entry controls -->
+  <div class="day-sheet-entry" id="ds-entry">
+    <div class="entry-format-row">
+      <div class="entry-section-label" id="ds-entry-label">Log exceptions</div>
+      <div class="entry-format-toggle">
+        <button class="entry-fmt-btn active" id="fmt-dec" onclick="setEntryFormat('dec')">Decimal</button>
+        <button class="entry-fmt-btn" id="fmt-hm" onclick="setEntryFormat('hm')">H:MM</button>
+      </div>
+    </div>
+
+    <!-- Worked-day modifiers -->
+    <div id="ds-worked-fields">
+      <div class="entry-field-row">
+        <label class="entry-label">OT hrs <span class="entry-label-sub">added at 1.5×</span></label>
+        <div class="entry-input-wrap">
+          <input type="number" id="ds-ot" min="0" step="0.5" placeholder="0">
+          <span class="entry-unit">hrs</span>
+        </div>
+      </div>
+      <div class="entry-field-row">
+        <label class="entry-label">DT hrs <span class="entry-label-sub">added at 2×</span></label>
+        <div class="entry-input-wrap">
+          <input type="number" id="ds-dt" min="0" step="0.5" placeholder="0">
+          <span class="entry-unit">hrs</span>
+        </div>
+      </div>
+      <div class="entry-field-row">
+        <label class="entry-label">Left early <span class="entry-label-sub">LWOP, unpaid</span></label>
+        <div class="entry-input-wrap">
+          <input type="number" id="ds-lwop" min="0" step="0.5" placeholder="0">
+          <span class="entry-unit">hrs</span>
+        </div>
+      </div>
+      <div class="entry-field-row">
+        <label class="entry-label">Gave away <span class="entry-label-sub">hours forfeited</span></label>
+        <div class="entry-input-wrap">
+          <input type="number" id="ds-gave" min="0" step="0.5" placeholder="0">
+          <span class="entry-unit">hrs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pickup field — shown for off days; also shown for worked days -->
+    <div class="entry-field-row" id="ds-pickup-field">
+      <label class="entry-label">Picked up <span class="entry-label-sub">regular rate</span></label>
+      <div class="entry-input-wrap">
+        <input type="number" id="ds-pickup" min="0" step="0.5" placeholder="0">
+        <span class="entry-unit">hrs</span>
+      </div>
+    </div>
+
+    <div class="entry-actions">
+      <button class="entry-clear-btn" id="ds-clear-btn" onclick="clearDayEntry()">Clear override</button>
+      <button class="entry-save-btn" onclick="saveDayEntry()">Save</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1773,26 +1883,34 @@ function calcShiftDifferential(settings) {
 // ═══════════════════════════════════════════════════════════════
 function calcGross(shifts, settings, rateChangeDate) {
   const regRate = settings['rate-regular']     || 0;
-  const oldRate = settings['rate-regular-old'] || regRate; // fall back to current if not set
+  const oldRate = settings['rate-regular-old'] || regRate;
   const otMult  = settings['ot-mult']          || 1.5;
   const dtMult  = settings['dt-mult']          || 2.0;
 
   let regHrs = 0, otHrs = 0, dtHrs = 0, gross = 0;
 
   for (const [dateStr, shift] of Object.entries(shifts)) {
-    if (shift.type === 'gave') continue;
-
     const date = new Date(dateStr + 'T12:00:00');
     const rate = date >= rateChangeDate ? regRate : oldRate;
 
-    const bid      = getBidForDate(dateStr);
-    const isOffDay = !bid.isWorkday;
-    const base     = isOffDay ? 0 : PAID_HRS - (shift.lwopHrs || 0);
-    const ot       = shift.otHrs || 0;
-    const dt       = shift.dtHrs || 0;
+    const bid        = getBidForDate(dateStr);
+    const isOffDay   = !bid.isWorkday;
 
-    gross  += (base * rate) + (ot * rate * otMult) + (dt * rate * dtMult);
-    regHrs += base;
+    const lwopHrs    = shift.lwopHrs   || 0;
+    const gaveHrs    = shift.gaveHrs   || 0;
+    const pickupHrs  = shift.pickupHrs || 0;
+    const ot         = shift.otHrs     || 0;
+    const dt         = shift.dtHrs     || 0;
+
+    // Base paid hours: scheduled days get PAID_HRS minus any LWOP or gave hours
+    // Off days get 0 base — only pickup/OT/DT count
+    const base = isOffDay ? 0 : Math.max(0, PAID_HRS - lwopHrs - gaveHrs);
+
+    gross  += (base * rate)
+            + (pickupHrs * rate)
+            + (ot * rate * otMult)
+            + (dt * rate * dtMult);
+    regHrs += base + pickupHrs;
     otHrs  += ot;
     dtHrs  += dt;
   }
@@ -1939,9 +2057,13 @@ function renderCalendar() {
     if (dateStr === todayStr) cls += ' today';
 
     if (override) {
-      // User-entered override — show with dot (confirmed)
-      const typeMap = { worked: 'worked', ot: 'ot', dt: 'ot', early: 'early', gave: 'gave', pickup: 'pickup' };
-      cls += ' ' + (typeMap[override.type] || 'worked');
+      // Determine display class from what modifiers are present
+      let dispType = 'worked';
+      if (override.pickupHrs > 0)                             dispType = 'pickup';
+      else if (override.type === 'gave' && !override.otHrs && !override.dtHrs) dispType = 'gave';
+      else if (override.otHrs > 0 || override.dtHrs > 0)     dispType = 'ot';
+      else if (override.lwopHrs > 0 || override.gaveHrs > 0) dispType = 'early';
+      cls += ' ' + dispType;
       cell.className = cls;
       cell.innerHTML = d + '<div class="cal-dot"></div>';
     } else {
@@ -2103,12 +2225,119 @@ function renderPayScreen() {
     buildPanel(2, 16, 31, `Paid ${nextMon} 5`);
 }
 
+// Auto-inserts colon as user types in H:MM mode.
+// User types digits only; colon is inserted automatically after
+// all but the last two digits. e.g. "118" → "1:18", "042" → "0:42".
+function autoColonFormat(el) {
+  const digits = el.value.replace(/\D/g, ''); // strip everything non-digit
+  if (digits.length < 3) {
+    el.value = digits; // not enough digits yet — show as-is
+    return;
+  }
+  const mins = digits.slice(-2);
+  const hrs  = digits.slice(0, digits.length - 2);
+  el.value = hrs + ':' + mins;
+}
+
 // ═══════════════════════════════════════════════════════════════
-// DAY DETAIL BOTTOM SHEET (read-only — entry controls added Step 5)
+// ENTRY FORMAT TOGGLE — decimal or H:MM
 // ═══════════════════════════════════════════════════════════════
+let entryFormat = 'dec'; // 'dec' | 'hm'
+const ENTRY_IDS = ['ds-ot','ds-dt','ds-lwop','ds-gave','ds-pickup'];
+
+function setEntryFormat(fmt) {
+  // Read current decimal values before switching so we can re-display them
+  const currentVals = ENTRY_IDS.map(id => readEntryDecimal(id));
+
+  entryFormat = fmt;
+  document.getElementById('fmt-dec').classList.toggle('active', fmt === 'dec');
+  document.getElementById('fmt-hm').classList.toggle('active', fmt === 'hm');
+
+  if (fmt === 'dec') {
+    ENTRY_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      el.type        = 'number';
+      el.step        = '0.5';
+      el.placeholder = '0';
+    });
+  } else {
+    ENTRY_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      el.type        = 'text';
+      el.step        = '';
+      el.placeholder = '0:00';
+      el.inputMode   = 'numeric';
+      el.oninput     = () => autoColonFormat(el);
+    });
+  }
+
+  // Re-populate inputs in the new format
+  ENTRY_IDS.forEach((id, i) => {
+    const dec = currentVals[i];
+    const el  = document.getElementById(id);
+    if (!dec) { el.value = ''; return; }
+    el.value = fmt === 'hm' ? decToHM(dec) : String(dec);
+  });
+}
+
+// Convert decimal hrs to "H:MM" string
+function decToHM(dec) {
+  if (!dec) return '';
+  const totalMin = Math.round(dec * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h + ':' + String(m).padStart(2, '0');
+}
+
+// Convert "H:MM" string to decimal hours, or parse plain decimal.
+// Returns 0 for empty/blank, NaN for invalid.
+function hmToDec(raw) {
+  const s = (raw || '').trim();
+  if (!s) return 0;
+  if (s.includes(':')) {
+    const [hPart, mPart] = s.split(':');
+    const h = parseInt(hPart, 10);
+    const m = parseInt(mPart, 10);
+    if (isNaN(h) || isNaN(m) || m < 0 || m > 59) return NaN;
+    return h + m / 60;
+  }
+  const n = parseFloat(s);
+  return isNaN(n) || n < 0 ? NaN : n;
+}
+
+// Read an entry input as decimal hours regardless of current format mode
+function readEntryDecimal(id) {
+  const el  = document.getElementById(id);
+  if (!el || !el.value.trim()) return 0;
+  if (entryFormat === 'hm') return hmToDec(el.value) || 0;
+  return parseFloat(el.value) || 0;
+}
+
+// Populate an entry input from a decimal value in the current format
+function setEntryValue(id, dec) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!dec) { el.value = ''; return; }
+  el.value = entryFormat === 'hm' ? decToHM(dec) : String(dec);
+}
+
+// Clear all entry inputs
+function clearEntryInputs() {
+  ENTRY_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DAY DETAIL BOTTOM SHEET
+// ═══════════════════════════════════════════════════════════════
+let currentDetailDate = null; // track which date the sheet is open for
+
 function showDayDetail(dateStr) {
+  currentDetailDate = dateStr;
   const settings = getSettings();
-  const stdHrs   = 8.5; // always display 8.5 scheduled
+  const stdHrs   = 8.5;
   const regRate  = settings['rate-regular']     || 0;
   const oldRate  = settings['rate-regular-old'] || regRate;
   const otMult   = settings['ot-mult']          || 1.5;
@@ -2125,23 +2354,39 @@ function showDayDetail(dateStr) {
     MON_SHORT[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
   document.getElementById('ds-dow').textContent = DOW_NAMES[date.getDay()];
 
-  const override       = shiftData[dateStr];
-  const bid            = getBidForDate(dateStr);
-  const isUserEntered  = !!override;
-  const shift = override || (bid.isWorkday ? { type: 'worked', otHrs: 0, dtHrs: 0, lwopHrs: 0 } : null);
+  const override      = shiftData[dateStr];
+  const bid           = getBidForDate(dateStr);
+  const isUserEntered = !!override;
+  const isWorkday     = bid.isWorkday;
 
-  // Badge
-  const badge     = document.getElementById('ds-badge');
-  const badgeTxt  = document.getElementById('ds-badge-text');
+  // Resolve shift modifiers
+  const otHrs     = override?.otHrs     || 0;
+  const dtHrs     = override?.dtHrs     || 0;
+  const lwopHrs   = override?.lwopHrs   || 0;
+  const gaveHrs   = override?.gaveHrs   || 0;
+  const pickupHrs = override?.pickupHrs || 0;
+
+  // Badge — priority: pickup > ot/dt > gave/lwop > worked > off
+  const badge    = document.getElementById('ds-badge');
+  const badgeTxt = document.getElementById('ds-badge-text');
+  let badgeType  = 'off';
+  if (isWorkday || isUserEntered) {
+    if (pickupHrs > 0)                badgeType = 'pickup';
+    else if (otHrs > 0 || dtHrs > 0) badgeType = 'ot';
+    else if (gaveHrs >= PAID_HRS)     badgeType = 'gave';
+    else if (lwopHrs > 0 || gaveHrs > 0) badgeType = 'early';
+    else if (isWorkday)               badgeType = 'worked';
+  } else if (!isWorkday && pickupHrs > 0) {
+    badgeType = 'pickup';
+  }
   const badgeLabels = {
-    worked: 'Regular shift', ot: 'Overtime shift', dt: 'Double time shift',
-    early: 'Left early (LWOP)', gave: 'Gave shift away', pickup: 'Picked up shift', off: 'Day off',
+    worked: 'Regular shift', ot: 'OT / DT shift', early: 'Modified shift',
+    gave: 'Gave shift away', pickup: 'Pickup shift', off: 'Day off',
   };
-  const shiftType = shift ? shift.type : 'off';
-  badge.className     = 'day-sheet-badge ' + shiftType;
-  badgeTxt.textContent = badgeLabels[shiftType] || shiftType;
+  badge.className      = 'day-sheet-badge ' + badgeType;
+  badgeTxt.textContent = badgeLabels[badgeType] || badgeType;
 
-  // Rows
+  // Info rows
   const rows = document.getElementById('ds-rows');
   rows.innerHTML = '';
 
@@ -2152,53 +2397,45 @@ function showDayDetail(dateStr) {
     </div>`;
   }
 
-  if (!shift || shiftType === 'off') {
-    addRow('Status', 'Not scheduled', 'muted');
-  } else if (shiftType === 'gave') {
-    if (bid.startTime) {
-      addRow('Scheduled start', fmtTime(bid.startTime), '');
-      addRow('Scheduled end',   fmtTime(addMinutes(bid.startTime, stdHrs * 60)), '');
-    }
-    addRow('Pay', '$0 — shift given away', 'muted');
+  if (isWorkday && bid.startTime) {
+    addRow('Shift start', fmtTime(bid.startTime), '');
+    addRow('Shift end',   fmtTime(addMinutes(bid.startTime, stdHrs * 60)), '');
+  }
+
+  if (!isWorkday && pickupHrs === 0 && !isUserEntered) {
+    addRow('Status', 'Day off — not scheduled', 'muted');
   } else {
-    if (bid.startTime) {
-      addRow('Shift start', fmtTime(bid.startTime), '');
-      addRow('Shift end',   fmtTime(addMinutes(bid.startTime, stdHrs * 60)), '');
-    }
+    const baseHrs = isWorkday ? Math.max(0, PAID_HRS - lwopHrs - gaveHrs) : 0;
 
-    const isOffDay = !bid.isWorkday;
-    const baseHrs  = isOffDay ? 0 : PAID_HRS - (shift.lwopHrs || 0);
-    const otHrs    = shift.otHrs || 0;
-    const dtHrs    = shift.dtHrs || 0;
-
-    if (isOffDay) {
-      addRow('Shift type', 'Off-day override', 'muted');
-      if (otHrs > 0) addRow('Overtime hours',     otHrs.toFixed(1) + ' hrs @ ' + otMult + 'x', '');
-      if (dtHrs > 0) addRow('Double time hours',  dtHrs.toFixed(1) + ' hrs @ ' + dtMult + 'x', '');
-    } else {
-      addRow('Scheduled hours', stdHrs.toFixed(1) + ' hrs (8.0 paid, 0.5 unpaid break)', 'muted');
-      if (shift.lwopHrs > 0) {
-        addRow('Paid hours', baseHrs.toFixed(1) + ' hrs (LWOP deducted)', '');
-        addRow('LWOP hours', '−' + shift.lwopHrs.toFixed(1) + ' hrs unpaid', 'muted');
+    if (isWorkday) {
+      addRow('Scheduled', stdHrs.toFixed(1) + ' hrs (8.0 paid, 0.5 unpaid break)', 'muted');
+      if (lwopHrs > 0 || gaveHrs > 0) {
+        addRow('Paid base', baseHrs.toFixed(1) + ' hrs', '');
+        if (lwopHrs > 0) addRow('Left early', '−' + lwopHrs.toFixed(1) + ' hrs (LWOP)', 'muted');
+        if (gaveHrs > 0) addRow('Gave away',  '−' + gaveHrs.toFixed(1) + ' hrs', 'muted');
       } else {
-        addRow('Paid hours', baseHrs.toFixed(1) + ' hrs', '');
+        addRow('Paid base', baseHrs.toFixed(1) + ' hrs', '');
       }
-      if (otHrs > 0) addRow('Overtime hours',    '+' + otHrs.toFixed(1) + ' hrs @ ' + otMult + 'x', '');
-      if (dtHrs > 0) addRow('Double time hours', '+' + dtHrs.toFixed(1) + ' hrs @ ' + dtMult + 'x', '');
     }
+    if (pickupHrs > 0) addRow('Picked up',     '+' + pickupHrs.toFixed(1) + ' hrs (regular rate)', '');
+    if (otHrs     > 0) addRow('Overtime',       '+' + otHrs.toFixed(1) + ' hrs @ ' + otMult + '×', '');
+    if (dtHrs     > 0) addRow('Double time',    '+' + dtHrs.toFixed(1) + ' hrs @ ' + dtMult + '×', '');
 
-    const rateLabel = (date >= rcd && settings['rate-change-date'])
-      ? '$' + regRate.toFixed(2) + '/hr'
-      : (settings['rate-change-date'] ? '$' + oldRate.toFixed(2) + '/hr (pre-rate change)' : '$' + regRate.toFixed(2) + '/hr');
+    const rateLabel = (settings['rate-change-date'] && date < rcd)
+      ? '$' + oldRate.toFixed(2) + '/hr (pre-rate change)'
+      : '$' + regRate.toFixed(2) + '/hr';
     addRow('Pay rate', rateLabel, '');
 
-    const dayGross = (baseHrs * rate) + (otHrs * rate * otMult) + (dtHrs * rate * dtMult);
+    const dayGross = (baseHrs * rate)
+                   + (pickupHrs * rate)
+                   + (otHrs * rate * otMult)
+                   + (dtHrs * rate * dtMult);
     addRow('Est. gross', '$' + dayGross.toFixed(2), 'green');
   }
 
   // Source indicator
   const src = document.getElementById('ds-source');
-  if (shiftType === 'off' && !isUserEntered) {
+  if (!isWorkday && !isUserEntered) {
     src.innerHTML = '';
   } else if (isUserEntered) {
     src.innerHTML = '<div class="day-sheet-source-dot"></div>Logged by you';
@@ -2206,13 +2443,83 @@ function showDayDetail(dateStr) {
     src.innerHTML = '<div class="day-sheet-source-dot inferred"></div>Inferred from bid schedule';
   }
 
+  // Entry controls — populate inputs in current format mode
+  clearEntryInputs();
+  setEntryValue('ds-ot',     otHrs);
+  setEntryValue('ds-dt',     dtHrs);
+  setEntryValue('ds-lwop',   lwopHrs);
+  setEntryValue('ds-gave',   gaveHrs);
+  setEntryValue('ds-pickup', pickupHrs);
+
+  // Show/hide worked-day fields based on whether it's a scheduled day
+  document.getElementById('ds-worked-fields').style.display = isWorkday ? 'block' : 'none';
+
+  // Clear button — only if there's an existing override
+  document.getElementById('ds-clear-btn').style.display = isUserEntered ? 'inline-block' : 'none';
+
   document.getElementById('day-sheet-backdrop').classList.add('open');
   document.getElementById('day-sheet').classList.add('open');
+}
+
+function saveDayEntry() {
+  if (!currentDetailDate) return;
+
+  const otHrs     = readEntryDecimal('ds-ot');
+  const dtHrs     = readEntryDecimal('ds-dt');
+  const lwopHrs   = readEntryDecimal('ds-lwop');
+  const gaveHrs   = readEntryDecimal('ds-gave');
+  const pickupHrs = readEntryDecimal('ds-pickup');
+
+  // Validate H:MM inputs if in that mode
+  if (entryFormat === 'hm') {
+    const ids = ['ds-ot','ds-dt','ds-lwop','ds-gave','ds-pickup'];
+    for (const id of ids) {
+      const raw = document.getElementById(id)?.value.trim();
+      if (raw && isNaN(hmToDec(raw))) {
+        showToast('Invalid time — use H:MM e.g. 1:18');
+        return;
+      }
+    }
+  }
+
+  const bid       = getBidForDate(currentDetailDate);
+  const isWorkday = bid.isWorkday;
+
+  const hasAnyEntry = otHrs || dtHrs || lwopHrs || gaveHrs || pickupHrs;
+  if (!hasAnyEntry) {
+    clearShiftEntry(currentDetailDate);
+    closeDayDetail();
+    renderCalendar();
+    updateMetrics();
+    showToast('Reset to bid schedule');
+    return;
+  }
+
+  let type = isWorkday ? 'worked' : 'pickup';
+  if (!isWorkday && pickupHrs > 0) type = 'pickup';
+  if (gaveHrs >= PAID_HRS && !pickupHrs && !otHrs && !dtHrs) type = 'gave';
+
+  const shiftObj = { type, otHrs, dtHrs, lwopHrs, gaveHrs, pickupHrs };
+  saveShiftEntry(currentDetailDate, shiftObj);
+  closeDayDetail();
+  renderCalendar();
+  updateMetrics();
+  showToast('Shift logged ✓');
+}
+
+function clearDayEntry() {
+  if (!currentDetailDate) return;
+  clearShiftEntry(currentDetailDate);
+  closeDayDetail();
+  renderCalendar();
+  updateMetrics();
+  showToast('Override cleared');
 }
 
 function closeDayDetail() {
   document.getElementById('day-sheet-backdrop').classList.remove('open');
   document.getElementById('day-sheet').classList.remove('open');
+  currentDetailDate = null;
 }
 
 // ═══════════════════════════════════════════════════════════════
