@@ -1713,6 +1713,62 @@ function getRateChangeDate() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SHIFT DIFFERENTIAL (Sections G & H)
+// Calculated from the current bid block times — no extra settings needed.
+//
+// Section G: $100/month if ≥4 working shifts start between noon and 5:00 AM
+//            (i.e. 12:00–23:59 or 00:00–04:59)
+// Section H: If any two working-day start times in the bid vary by >29 min,
+//            the total number of working days determines the tier:
+//            2 days → $25 | 3 → $55 | 4 → $95 | 5+ → $125
+//
+// Since bid blocks are full-month consistent, we evaluate the bid's
+// per-DOW times as a single representative week.
+// Returns { sectionG, sectionH, total }
+// ═══════════════════════════════════════════════════════════════
+function calcShiftDifferential(settings) {
+  const times = settings['bid-curr-times'] || [];
+
+  // Collect working-day start times as minutes-since-midnight
+  const workMins = [];
+  for (let i = 0; i < 7; i++) {
+    const t = times[i] || '';
+    if (!t) continue;
+    const [h, m] = t.split(':').map(Number);
+    workMins.push(h * 60 + m);
+  }
+
+  const workDays = workMins.length;
+  if (workDays === 0) return { sectionG: 0, sectionH: 0, total: 0 };
+
+  // Section G: shifts starting at or after noon (720 min) OR before 5 AM (300 min)
+  const lateOrNightCount = workMins.filter(m => m >= 720 || m < 300).length;
+  const sectionG = lateOrNightCount >= 4 ? 100 : 0;
+
+  // Section H: count distinct start-time groups where each new group differs
+  // from all previously seen groups by >29 min.
+  // Tier = number of distinct groups minus 1 (= number of "variances"):
+  //   1 variance (2 distinct times) → $25
+  //   2 variances (3 distinct times) → $55
+  //   3 variances (4 distinct times) → $95
+  //   4+ variances (5+ distinct times) → $125
+  const distinctGroups = [];
+  for (const mins of workMins) {
+    const alreadyCovered = distinctGroups.some(g => Math.abs(g - mins) <= 29);
+    if (!alreadyCovered) distinctGroups.push(mins);
+  }
+  const variances = distinctGroups.length - 1; // number of variance boundaries
+
+  let sectionH = 0;
+  if (variances >= 4)      sectionH = 125;
+  else if (variances === 3) sectionH = 95;
+  else if (variances === 2) sectionH = 55;
+  else if (variances === 1) sectionH = 25;
+
+  return { sectionG, sectionH, total: sectionG + sectionH };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // GROSS PAY CALCULATION
 // ═══════════════════════════════════════════════════════════════
 function calcGross(shifts, settings, rateChangeDate) {
@@ -1747,13 +1803,17 @@ function calcGross(shifts, settings, rateChangeDate) {
 // ═══════════════════════════════════════════════════════════════
 // NET PAY ESTIMATE (for metric cards — quick path)
 // ═══════════════════════════════════════════════════════════════
-function estimateNet(gross, settings) {
+function estimateNet(gross, settings, isPeriod1 = false) {
   const s = settings;
-  const preTax  = (s['medical'] || 0) + (s['dental'] || 0) + (s['vision'] || 0)
-                + (s['add'] || 0) + (gross * (s['401k-pct'] || 0) / 100);
-  const taxable = Math.max(0, gross - preTax);
+  // Shift differential is paid once per month on Period 1 paycheck
+  const shiftDiff = isPeriod1 ? calcShiftDifferential(settings).total : 0;
+  const totalGross = gross + shiftDiff;
 
-  const basis = s['wh-basis'] || gross || 1;
+  const preTax  = (s['medical'] || 0) + (s['dental'] || 0) + (s['vision'] || 0)
+                + (s['add'] || 0) + (totalGross * (s['401k-pct'] || 0) / 100);
+  const taxable = Math.max(0, totalGross - preTax);
+
+  const basis = s['wh-basis'] || totalGross || 1;
   const scale = taxable / basis;
   const fedWH = (s['fed-wh'] || 0) * scale;
   const caWH  = (s['ca-wh']  || 0) * scale;
@@ -1765,21 +1825,22 @@ function estimateNet(gross, settings) {
   const afterTax = (s['401k-loan'] || 0) + (s['stock'] || 0)
                  + (s['union'] || 0) + (s['other-aftertax'] || 0);
 
-  return Math.max(0, gross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
+  return Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // FULL BREAKDOWN (for Pay screen — every line item)
 // ═══════════════════════════════════════════════════════════════
-function calcBreakdown(gross, settings) {
-  const s    = settings;
-  const k401 = gross * (s['401k-pct'] || 0) / 100;
+function calcBreakdown(gross, settings, shiftDiff = 0) {
+  const s         = settings;
+  const totalGross = gross + shiftDiff;
+  const k401      = totalGross * (s['401k-pct'] || 0) / 100;
   const preTaxHDV = (s['medical'] || 0) + (s['dental'] || 0)
                   + (s['vision'] || 0) + (s['add'] || 0);
   const preTax  = preTaxHDV + k401;
-  const taxable = Math.max(0, gross - preTax);
+  const taxable = Math.max(0, totalGross - preTax);
 
-  const basis = s['wh-basis'] || gross || 1;
+  const basis = s['wh-basis'] || totalGross || 1;
   const scale = taxable / basis;
   const fedWH = (s['fed-wh'] || 0) * scale;
   const caWH  = (s['ca-wh']  || 0) * scale;
@@ -1788,16 +1849,16 @@ function calcBreakdown(gross, settings) {
   const medicare = taxable * (s['medicare'] || 0) / 100;
   const casdi    = taxable * (s['casdi']    || 0) / 100;
 
-  const loan     = s['401k-loan']     || 0;
-  const stock    = s['stock']         || 0;
-  const union    = s['union']         || 0;
+  const loan     = s['401k-loan']      || 0;
+  const stock    = s['stock']          || 0;
+  const union    = s['union']          || 0;
   const otherAT  = s['other-aftertax'] || 0;
   const afterTax = loan + stock + union + otherAT;
 
-  const net = Math.max(0, gross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
+  const net = Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
 
-  return { gross, preTaxHDV, k401, taxable, fedWH, caWH, oasdi, medicare, casdi,
-           loan, stock, union, otherAT, net };
+  return { gross: totalGross, baseGross: gross, shiftDiff, preTaxHDV, k401, taxable,
+           fedWH, caWH, oasdi, medicare, casdi, loan, stock, union, otherAT, net };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1926,7 +1987,8 @@ function updateMetrics() {
   const rcd = getRateChangeDate();
   const { gross, regHrs, otHrs, dtHrs } = calcGross(periodShifts, settings, rcd);
   const totalHrs = regHrs + otHrs + dtHrs;
-  const net = estimateNet(gross, settings);
+  const isPeriod1 = viewDay <= 15;
+  const net = estimateNet(gross, settings, isPeriod1);
 
   document.getElementById('metric-hours').innerHTML = totalHrs.toFixed(1) + ' <span>hrs</span>';
   document.getElementById('metric-net').textContent = '$' + Math.round(net).toLocaleString();
@@ -1985,7 +2047,9 @@ function renderPayScreen() {
     }
 
     const { gross, regHrs, otHrs, dtHrs } = calcGross(periodShifts, settings, rcd);
-    const b = calcBreakdown(gross, settings);
+    const isPeriod1  = periodNum === 1;
+    const diff       = isPeriod1 ? calcShiftDifferential(settings) : { sectionG: 0, sectionH: 0, total: 0 };
+    const b = calcBreakdown(gross, settings, diff.total);
     const hasOT = otHrs > 0;
     const hasDT = dtHrs > 0;
 
@@ -1993,6 +2057,14 @@ function renderPayScreen() {
     rows += row(`Regular (${fmtHrs(regHrs)})`, fmt(regHrs * (settings['rate-regular'] || 0)));
     if (hasOT) rows += row(`Overtime (${fmtHrs(otHrs)})`,     fmt(otHrs * (settings['rate-regular'] || 0) * (settings['ot-mult'] || 1.5)));
     if (hasDT) rows += row(`Double time (${fmtHrs(dtHrs)})`,  fmt(dtHrs * (settings['rate-regular'] || 0) * (settings['dt-mult'] || 2.0)));
+
+    // Shift differential — Period 1 only, shown as a separate earnings line
+    if (isPeriod1 && diff.total > 0) {
+      const diffParts = [];
+      if (diff.sectionG > 0) diffParts.push(`$${diff.sectionG} inconvenience`);
+      if (diff.sectionH > 0) diffParts.push(`$${diff.sectionH} start-time premium`);
+      rows += row(`Shift differential <span style="font-size:11px;color:#aaa;font-weight:400;">(${diffParts.join(' + ')})</span>`, fmt(diff.total));
+    }
 
     rows += `<div class="pay-row" style="border-top:0.5px solid #e8e8e0;margin-top:2px;padding-top:9px;">
                <span class="pay-row-label" style="font-weight:500;color:#1a1a18;">Gross pay</span>
