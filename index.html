@@ -629,6 +629,206 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  /* ── Help screen ── */
+  .help-intro {
+    font-size: 13px;
+    color: #666660;
+    line-height: 1.55;
+    margin-bottom: 1rem;
+    padding: 10px 14px;
+    background: #f5f5f0;
+    border-radius: 10px;
+    border: 0.5px solid #e8e8e0;
+  }
+  .help-section {
+    border: 0.5px solid #e8e8e0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .help-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a18;
+    cursor: pointer;
+    background: #fafafa;
+    user-select: none;
+  }
+  .help-section-header:active { background: #f0f0ea; }
+  .help-chevron {
+    font-size: 16px;
+    color: #aaa;
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .help-chevron.open { transform: rotate(90deg); }
+  .help-body {
+    display: none;
+    padding: 12px 14px 14px;
+    border-top: 0.5px solid #f0f0ea;
+  }
+  .help-body.open { display: block; }
+  .help-body p {
+    font-size: 13px;
+    color: #666660;
+    line-height: 1.55;
+    margin-bottom: 10px;
+  }
+  .help-step {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: flex-start;
+  }
+  .help-step-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #1a1a18;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .help-step:has(.help-step-num:not(:empty)[style]) .help-step-num,
+  .help-section .help-step-num {
+    font-size: 11px;
+  }
+  .help-step div {
+    font-size: 13px;
+    color: #444440;
+    line-height: 1.5;
+    flex: 1;
+  }
+  .help-step div strong { color: #1a1a18; }
+  .help-note {
+    font-size: 12px;
+    color: #633806;
+    background: #FAEEDA;
+    border-radius: 6px;
+    padding: 7px 10px;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+  .help-subsection {
+    font-size: 11px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 12px 0 6px;
+  }
+  .help-subsection:first-child { margin-top: 0; }
+  .help-platform {
+    background: #f9f9f6;
+    border: 0.5px solid #e8e8e0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .help-platform-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .help-platform-label.android { background: #E1F5EE; color: #085041; }
+  .help-platform-label.ios { background: #E6F1FB; color: #042C53; }
+  .help-color-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .help-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .help-color-row div {
+    font-size: 13px;
+    color: #444440;
+    line-height: 1.5;
+  }
+  .help-color-row div strong { color: #1a1a18; }
+  .help-footer {
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+    font-size: 12px;
+    color: #bbb;
+  }
+  .help-footer a { color: #aaa; text-decoration: none; }
+  .help-footer a:hover { color: #666; }
+
+  /* ── Ko-fi banner ── */
+  .kofi-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #f5f5f0;
+    border: 0.5px solid #e0e0d8;
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin-bottom: 1.25rem;
+  }
+  .kofi-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+  .kofi-banner-text {
+    font-size: 12px;
+    color: #666660;
+    line-height: 1.4;
+  }
+  .kofi-banner-text strong {
+    color: #1a1a18;
+    font-weight: 600;
+  }
+  .kofi-banner-link {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    background: #1a1a18;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .kofi-banner-dismiss {
+    font-size: 15px;
+    color: #bbb;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 0 2px 4px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .kofi-banner-dismiss:hover { color: #888; }
+
   /* ── Offline bar ── */
   .offline-bar {
     position: fixed;
@@ -929,6 +1129,7 @@
       <button class="tab active" onclick="switchTab('calendar')">Calendar</button>
       <button class="tab" onclick="switchTab('pay')">Pay</button>
       <button class="tab" onclick="switchTab('settings')">Settings</button>
+      <button class="tab" onclick="switchTab('help')">Help</button>
     </div>
   </div>
 
@@ -969,6 +1170,16 @@
         <div class="legend-item"><div class="legend-dot" style="background:#D4537E;"></div>Gave away</div>
         <div class="legend-item"><div class="legend-dot" style="background:#378ADD;"></div>Picked up</div>
       </div>
+    </div>
+
+    <!-- Ko-fi support banner -->
+    <div class="kofi-banner" id="kofi-banner">
+      <div class="kofi-banner-left">
+        <span style="font-size:18px;">☕</span>
+        <div class="kofi-banner-text"><strong>Like this app?</strong> It's free — a tip keeps it going.</div>
+      </div>
+      <a class="kofi-banner-link" href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener">Support</a>
+      <button class="kofi-banner-dismiss" onclick="dismissKofi()" aria-label="Dismiss">×</button>
     </div>
 
   </div><!-- /screen-calendar -->
@@ -1219,6 +1430,159 @@
     </div>
 
   </div><!-- /screen-settings -->
+
+  <!-- ═══════════════════════════════════════════ HELP SCREEN -->
+  <div id="screen-help" class="screen">
+
+    <div class="help-intro">
+      Everything you need to set up and use Shift Pay Tracker — bookmark this tab for reference.
+    </div>
+
+    <!-- Section: How the app works -->
+    <div class="help-section">
+      <div class="help-section-header" onclick="toggleHelp('how')">
+        <span>📋 How this app works</span><span class="help-chevron" id="chev-how">›</span>
+      </div>
+      <div class="help-body" id="hbody-how">
+        <p>Shift Pay Tracker estimates your paycheck before it hits your account. Here's the flow:</p>
+        <div class="help-step"><span class="help-step-num">1</span><div><strong>You set up your bid block</strong> in Settings — your scheduled workdays and start times for the ~5-week period.</div></div>
+        <div class="help-step"><span class="help-step-num">2</span><div><strong>The calendar fills in automatically.</strong> Any day in your bid block schedule shows as a regular shift (green). Days off are blank.</div></div>
+        <div class="help-step"><span class="help-step-num">3</span><div><strong>You log exceptions by tapping a day</strong> — overtime, double time, left early, gave a shift, or picked one up. Only log what's different from your normal schedule.</div></div>
+        <div class="help-step"><span class="help-step-num">4</span><div><strong>The Pay tab calculates everything</strong> — gross pay, every deduction, and estimated net for each pay period.</div></div>
+        <div class="help-note">Pay periods are always the 1st–15th (paid the 20th) and 16th–end of month (paid the 5th of next month), regardless of your bid block.</div>
+      </div>
+    </div>
+
+    <!-- Section: Installing on your phone -->
+    <div class="help-section">
+      <div class="help-section-header" onclick="toggleHelp('install')">
+        <span>📲 Installing on your phone</span><span class="help-chevron" id="chev-install">›</span>
+      </div>
+      <div class="help-body" id="hbody-install">
+        <p>This app installs directly from your browser — no App Store, no Play Store. It works offline once installed.</p>
+
+        <div class="help-platform">
+          <div class="help-platform-label android">Android (Chrome)</div>
+          <div class="help-step"><span class="help-step-num">1</span><div>Open the app in <strong>Chrome</strong>.</div></div>
+          <div class="help-step"><span class="help-step-num">2</span><div>Tap the <strong>three-dot menu</strong> (top right).</div></div>
+          <div class="help-step"><span class="help-step-num">3</span><div>Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</div></div>
+          <div class="help-step"><span class="help-step-num">4</span><div>Tap <strong>Install</strong> on the confirmation prompt. The app icon will appear on your home screen.</div></div>
+        </div>
+
+        <div class="help-platform">
+          <div class="help-platform-label ios">iPhone / iPad (Safari)</div>
+          <div class="help-note" style="margin-bottom:10px;">⚠️ On iOS, you <strong>must use Safari</strong>. Chrome and other browsers on iPhone cannot install web apps.</div>
+          <div class="help-step"><span class="help-step-num">1</span><div>Open the app in <strong>Safari</strong>.</div></div>
+          <div class="help-step"><span class="help-step-num">2</span><div>Tap the <strong>Share button</strong> (the box with an arrow pointing up, at the bottom of the screen).</div></div>
+          <div class="help-step"><span class="help-step-num">3</span><div>Scroll down and tap <strong>"Add to Home Screen"</strong>.</div></div>
+          <div class="help-step"><span class="help-step-num">4</span><div>Tap <strong>Add</strong> in the top right. The app icon will appear on your home screen.</div></div>
+        </div>
+
+        <div class="help-note">Once installed, the app opens full-screen like a native app and works without a cell signal or Wi-Fi. Your data is stored on your device, not in the cloud.</div>
+      </div>
+    </div>
+
+    <!-- Section: First-time setup -->
+    <div class="help-section">
+      <div class="help-section-header" onclick="toggleHelp('setup')">
+        <span>⚙️ First-time setup</span><span class="help-chevron" id="chev-setup">›</span>
+      </div>
+      <div class="help-body" id="hbody-setup">
+        <p>When you first open the app, a setup wizard walks you through everything. Here's what each step is asking for and where to find the numbers on your pay stub.</p>
+
+        <div class="help-subsection">Pay rate</div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Current hourly rate</strong> — your regular straight-time rate. On your stub, look for "REG RATE" or "BASE RATE" near the top of the earnings section.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Previous rate</strong> — only needed if you got a raise recently. Enter your old rate and the date the new rate took effect. The app uses the right rate for each shift automatically.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>OT multiplier</strong> — almost always 1.5 (time-and-a-half). Check your contract if unsure.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>DT multiplier</strong> — almost always 2.0 (double time). This applies to mandatory double-time shifts only.</div></div>
+
+        <div class="help-subsection">Bid block</div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Bid start date</strong> — the first Sunday of your current bid month. Check your bid award paperwork or ask your supervisor.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Start times per day</strong> — enter your scheduled shift start time for each working day. Leave a day blank if it's your day off. Example: if you work Mon–Fri starting at 2:00 PM, enter 14:00 for Mon through Fri and leave Sat and Sun blank.</div></div>
+
+        <div class="help-subsection">Deductions</div>
+        <p style="font-size:13px;color:#666660;margin-bottom:8px;">These come straight off your pay stub. Look for the "Deductions" section. Enter each amount <strong>per pay period</strong> (not per month — Southwest pays twice a month).</p>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Medical / Dental / Vision</strong> — pre-tax health deductions. Look for "MED," "DENT," "VIS" or similar in the pre-tax deductions section of your stub.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>AD&amp;D</strong> — accidental death &amp; dismemberment insurance. Often listed as "ADD" or "AD&amp;D" in pre-tax deductions. Enter 0 if you don't have it.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>401(k) contribution %</strong> — the percentage of your gross pay going into your retirement account each period. Look for "401K" or "RETIREMENT" in the pre-tax section.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>401(k) loan payment</strong> — if you have a 401(k) loan, this is the flat repayment amount each period. It's an after-tax deduction — separate from your contribution. Look for "401K LOAN" in after-tax deductions.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Stock purchase plan</strong> — if you participate in an employee stock plan, enter the flat amount deducted each period.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Union dues</strong> — your TWU dues per period. Look for "UNION DUES" or "TWU" in after-tax deductions.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Life ins &amp; other</strong> — combine any remaining after-tax deductions here (supplemental life insurance, etc.).</div></div>
+
+        <div class="help-subsection">Tax calibration</div>
+        <div class="help-note">Federal and state income tax withholding depends on your W-4 elections and filing status — the app can't calculate it from scratch. Instead, give it one real pay stub as a reference and it will scale from there.</div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Federal withholding</strong> — look for "FED TAX," "FEDERAL INCOME TAX," or "FIT" on your stub. Enter the dollar amount withheld that period.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>State withholding</strong> — look for "CA TAX," "STATE INCOME TAX," or "SIT." Enter the dollar amount withheld.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Gross pay that period</strong> — the gross pay from the same stub you used above. The app uses this to build a ratio and scales your withholding proportionally each period.</div></div>
+        <div class="help-note">You can skip tax calibration during setup and add it later in Settings. OASDI (6.2%), Medicare (1.45%), and CA SDI (1.3%) are percentage-based and calculate automatically.</div>
+      </div>
+    </div>
+
+    <!-- Section: Using the calendar -->
+    <div class="help-section">
+      <div class="help-section-header" onclick="toggleHelp('calendar')">
+        <span>📅 Using the calendar</span><span class="help-chevron" id="chev-calendar">›</span>
+      </div>
+      <div class="help-body" id="hbody-calendar">
+        <p>The calendar shows every day of the month. Your bid block schedule fills in automatically — you only need to tap a day when something is different from normal.</p>
+
+        <div class="help-subsection">Color guide</div>
+        <div class="help-color-row"><span class="help-color-dot" style="background:#1D9E75;"></span><div><strong>Green — Regular shift.</strong> Inferred from your bid block. 8 hours paid, standard rate. No action needed.</div></div>
+        <div class="help-color-row"><span class="help-color-dot" style="background:#EF9F27;"></span><div><strong>Amber — Overtime or double time.</strong> Tap the day and enter how many OT or DT hours you worked on top of your regular shift.</div></div>
+        <div class="help-color-row"><span class="help-color-dot" style="background:#D85A30;"></span><div><strong>Coral — Left early.</strong> Tap the day and enter how many hours you left before your shift ended. That time is deducted from your pay.</div></div>
+        <div class="help-color-row"><span class="help-color-dot" style="background:#D4537E;"></span><div><strong>Pink — Gave away a shift.</strong> Tap the day and log it as a gave shift. Your full 8 hours won't be paid for that day.</div></div>
+        <div class="help-color-row"><span class="help-color-dot" style="background:#378ADD;"></span><div><strong>Blue — Picked up a shift.</strong> Tap the day (even on your day off) and enter how many hours you picked up. Paid at your regular rate on top of anything else that day.</div></div>
+
+        <div class="help-subsection">Logging a shift exception</div>
+        <div class="help-step"><span class="help-step-num">1</span><div>Tap any day on the calendar.</div></div>
+        <div class="help-step"><span class="help-step-num">2</span><div>A detail sheet slides up showing what the app currently has for that day (scheduled hours, pay rate, estimated earnings).</div></div>
+        <div class="help-step"><span class="help-step-num">3</span><div>Enter the hours for whatever applies — OT, DT, left early, gave, or picked up. You can combine them on the same day (e.g. you picked up a shift and stayed for OT).<br><br>
+          <strong>Two ways to enter hours — use the toggle at the top of the entry sheet:</strong><br><br>
+          <strong>Decimal mode</strong> (default) — enter hours as a number with a decimal. Half an hour is 0.5, 45 minutes is 0.75, one hour and 12 minutes is 1.2, and so on. This is the fastest option for most entries.<br><br>
+          <strong>H:MM mode</strong> — enter hours and minutes with a colon. The colon inserts automatically after you type the first two digits, so you don't need to type it yourself. <em>Important: you must type leading zeros for single-digit hours.</em> To enter 1 hour 18 minutes, type <strong>0118</strong> — the app formats it as <strong>1:18</strong>. If you just type 118 without the leading zero, it reads as 11 hours and 8 minutes. When in doubt, always start with a zero if the hour is less than 10.<br><br>
+          The toggle converts any values you've already entered between formats on the fly, so you can switch back and forth without losing what you typed.</div></div>
+        <div class="help-step"><span class="help-step-num">4</span><div>Tap <strong>Save</strong>. The calendar updates immediately and pay totals recalculate.</div></div>
+        <div class="help-step"><span class="help-step-num">5</span><div>To undo, tap the day again and tap <strong>Clear override</strong>. The day goes back to whatever your bid block says.</div></div>
+
+        <div class="help-note">Shifts are 8.5 hours scheduled but 8.0 hours paid — the unpaid 30-minute break is handled automatically. You never need to enter this yourself.</div>
+      </div>
+    </div>
+
+    <!-- Section: If you lose your data -->
+    <div class="help-section">
+      <div class="help-section-header" onclick="toggleHelp('recovery')">
+        <span>🔄 If you lose your data</span><span class="help-chevron" id="chev-recovery">›</span>
+      </div>
+      <div class="help-body" id="hbody-recovery">
+        <div class="help-note" style="margin-bottom:12px;">⚠️ This app stores all data on your device — there's no cloud backup. In certain situations, that data can be lost.</div>
+
+        <div class="help-subsection">Why data gets wiped</div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>You cleared your browser/app cache</strong> — this erases all locally stored app data.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>You got a new phone</strong> — app data doesn't transfer automatically.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Your browser ran low on storage</strong> — some browsers evict stored data when device storage is full.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>You opened the app in a different browser</strong> — Chrome and Safari each have their own storage. Data from one isn't visible to the other.</div></div>
+
+        <div class="help-subsection">What gets lost</div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>All your Settings</strong> — pay rate, bid block, deductions, tax calibration.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>All shift exceptions you've logged</strong> — OT, DT, early outs, pickups, gave shifts.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Historical data is gone for good</strong> — the app doesn't store anything on a server, so past periods can't be recovered.</div></div>
+
+        <div class="help-subsection">How to recover</div>
+        <div class="help-step"><span class="help-step-num">1</span><div>Open the app — the setup wizard will launch automatically since your settings are gone.</div></div>
+        <div class="help-step"><span class="help-step-num">2</span><div><strong>Re-enter Settings first</strong> — pay rate, bid block, deductions, and tax calibration. Grab a recent pay stub to reference.</div></div>
+        <div class="help-step"><span class="help-step-num">3</span><div><strong>Re-log exceptions for the current pay period only</strong> — only the current period matters for your next paycheck. Anything older you can skip.</div></div>
+        <div class="help-step"><span class="help-step-num">4</span><div>You're back up and running. Future periods will track normally from here.</div></div>
+
+        <div class="help-note">💡 To protect against this: avoid clearing your browser cache if this app is installed. On iPhone, don't delete the Safari app data in Settings. If you get a new phone, do your Settings re-entry before your next paycheck period starts.</div>
+      </div>
+    </div>
+
+    <div class="help-footer">
+      Questions or feedback? <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener">Find me on Ko-fi ☕</a>
+    </div>
+
+  </div><!-- /screen-help -->
 
   <!-- Install prompt banner -->
   <div class="install-banner" id="install-banner">
@@ -1686,9 +2050,37 @@ function switchTab(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
-  const tabs = { calendar: 0, pay: 1, settings: 2 };
+  const tabs = { calendar: 0, pay: 1, settings: 2, help: 3 };
   document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
   if (name === 'pay') renderPayScreen();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KO-FI BANNER
+// ═══════════════════════════════════════════════════════════════
+function initKofiBanner() {
+  if (localStorage.getItem('shiftpay-kofi-dismissed')) {
+    const el = document.getElementById('kofi-banner');
+    if (el) el.style.display = 'none';
+  }
+}
+
+function dismissKofi() {
+  const el = document.getElementById('kofi-banner');
+  if (el) el.style.display = 'none';
+  localStorage.setItem('shiftpay-kofi-dismissed', '1');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELP ACCORDION
+// ═══════════════════════════════════════════════════════════════
+function toggleHelp(id) {
+  const body  = document.getElementById('hbody-' + id);
+  const chev  = document.getElementById('chev-' + id);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.classList.toggle('open', !isOpen);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2806,6 +3198,7 @@ function dismissInstall() {
   checkBidTransition();
   renderCalendar();
   updateMetrics();
+  initKofiBanner();
 
   // Show wizard if no settings have been saved yet
   const hasSettings = !!localStorage.getItem('shiftpay-settings');
