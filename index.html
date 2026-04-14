@@ -902,19 +902,6 @@
     flex-shrink: 0;
   }
 
-  /* ── Settings footer ── */
-  .settings-footer {
-    text-align: center;
-    padding: 1rem 0 0.5rem;
-    font-size: 12px;
-    color: #bbb;
-  }
-  .settings-footer a {
-    color: #aaa;
-    text-decoration: none;
-  }
-  .settings-footer a:hover { color: #666; }
-
   /* ── First-run wizard ── */
   .wizard-overlay {
     position: fixed;
@@ -1425,10 +1412,6 @@
       <button class="save-btn" onclick="saveSettings()">Save settings</button>
     </div>
 
-    <div class="settings-footer">
-      Find this useful? <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener">Buy me a coffee ☕</a>
-    </div>
-
   </div><!-- /screen-settings -->
 
   <!-- ═══════════════════════════════════════════ HELP SCREEN -->
@@ -1579,7 +1562,13 @@
     </div>
 
     <div class="help-footer">
-      Questions or feedback? <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener">Find me on Ko-fi ☕</a>
+      <div style="margin-bottom:6px;">
+        <div style="color:#444440;font-size:13px;">📧 Feedback or issues: <strong>customerservice@vonhogler.com</strong></div>
+      </div>
+      <div style="margin-bottom:6px;">
+        <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener" style="color:#666660;text-decoration:none;">☕ Follow on Ko-fi to get notified when updates ship</a>
+      </div>
+      <div style="color:#bbb;">Questions or feedback? <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener" style="color:#aaa;">Find me on Ko-fi</a></div>
     </div>
 
   </div><!-- /screen-help -->
@@ -1905,8 +1894,8 @@
       </div>
     </div>
 
-    <!-- Worked-day modifiers -->
-    <div id="ds-worked-fields">
+    <!-- OT / DT — shown on any day -->
+    <div id="ds-ot-fields">
       <div class="entry-field-row">
         <label class="entry-label">OT hrs <span class="entry-label-sub">added at 1.5×</span></label>
         <div class="entry-input-wrap">
@@ -1921,6 +1910,10 @@
           <span class="entry-unit">hrs</span>
         </div>
       </div>
+    </div>
+
+    <!-- LWOP / Gave — workday only -->
+    <div id="ds-worked-fields">
       <div class="entry-field-row">
         <label class="entry-label">Left early <span class="entry-label-sub">LWOP, unpaid</span></label>
         <div class="entry-input-wrap">
@@ -2846,15 +2839,11 @@ function showDayDetail(dateStr) {
   const badge    = document.getElementById('ds-badge');
   const badgeTxt = document.getElementById('ds-badge-text');
   let badgeType  = 'off';
-  if (isWorkday || isUserEntered) {
-    if (pickupHrs > 0)                badgeType = 'pickup';
-    else if (otHrs > 0 || dtHrs > 0) badgeType = 'ot';
-    else if (gaveHrs >= PAID_HRS)     badgeType = 'gave';
-    else if (lwopHrs > 0 || gaveHrs > 0) badgeType = 'early';
-    else if (isWorkday)               badgeType = 'worked';
-  } else if (!isWorkday && pickupHrs > 0) {
-    badgeType = 'pickup';
-  }
+  if (pickupHrs > 0)                         badgeType = 'pickup';
+  else if (otHrs > 0 || dtHrs > 0)          badgeType = 'ot';
+  else if (gaveHrs >= PAID_HRS)              badgeType = 'gave';
+  else if (lwopHrs > 0 || gaveHrs > 0)      badgeType = 'early';
+  else if (isWorkday)                        badgeType = 'worked';
   const badgeLabels = {
     worked: 'Regular shift', ot: 'OT / DT shift', early: 'Modified shift',
     gave: 'Gave shift away', pickup: 'Pickup shift', off: 'Day off',
@@ -2878,8 +2867,8 @@ function showDayDetail(dateStr) {
     addRow('Shift end',   fmtTime(addMinutes(bid.startTime, stdHrs * 60)), '');
   }
 
-  if (!isWorkday && pickupHrs === 0 && !isUserEntered) {
-    addRow('Status', 'Day off — not scheduled', 'muted');
+  if (!isWorkday && pickupHrs === 0 && otHrs === 0 && dtHrs === 0 && !isUserEntered) {
+    addRow('Status', 'Day off — tap below to log a pickup or extra hours', 'muted');
   } else {
     const baseHrs = isWorkday ? Math.max(0, PAID_HRS - lwopHrs - gaveHrs) : 0;
 
@@ -2892,6 +2881,8 @@ function showDayDetail(dateStr) {
       } else {
         addRow('Paid base', baseHrs.toFixed(1) + ' hrs', '');
       }
+    } else {
+      addRow('Status', 'Scheduled day off', 'muted');
     }
     if (pickupHrs > 0) addRow('Picked up',     '+' + pickupHrs.toFixed(1) + ' hrs (regular rate)', '');
     if (otHrs     > 0) addRow('Overtime',       '+' + otHrs.toFixed(1) + ' hrs @ ' + otMult + '×', '');
@@ -2927,7 +2918,8 @@ function showDayDetail(dateStr) {
   setEntryValue('ds-gave',   gaveHrs);
   setEntryValue('ds-pickup', pickupHrs);
 
-  // Show/hide worked-day fields based on whether it's a scheduled day
+  // Show/hide fields based on whether it's a scheduled workday
+  // OT/DT always visible (valid on any day); LWOP/Gave only on workdays
   document.getElementById('ds-worked-fields').style.display = isWorkday ? 'block' : 'none';
 
   // Clear button — only if there's an existing override
@@ -2961,7 +2953,11 @@ function saveDayEntry() {
   const bid       = getBidForDate(currentDetailDate);
   const isWorkday = bid.isWorkday;
 
-  const hasAnyEntry = otHrs || dtHrs || lwopHrs || gaveHrs || pickupHrs;
+  // LWOP and Gave fields are hidden on off days — force to 0 to be safe
+  const safeLwop = isWorkday ? lwopHrs : 0;
+  const safeGave = isWorkday ? gaveHrs : 0;
+
+  const hasAnyEntry = otHrs || dtHrs || safeLwop || safeGave || pickupHrs;
   if (!hasAnyEntry) {
     clearShiftEntry(currentDetailDate);
     closeDayDetail();
@@ -2971,11 +2967,14 @@ function saveDayEntry() {
     return;
   }
 
-  let type = isWorkday ? 'worked' : 'pickup';
-  if (!isWorkday && pickupHrs > 0) type = 'pickup';
-  if (gaveHrs >= PAID_HRS && !pickupHrs && !otHrs && !dtHrs) type = 'gave';
+  // Determine type for calendar color priority
+  let type = 'worked';
+  if (!isWorkday) type = 'pickup';  // base: off-day entry
+  if (pickupHrs > 0)                              type = 'pickup';
+  if (otHrs > 0 || dtHrs > 0)                    type = 'ot';
+  if (safeGave >= PAID_HRS && !pickupHrs && !otHrs && !dtHrs) type = 'gave';
 
-  const shiftObj = { type, otHrs, dtHrs, lwopHrs, gaveHrs, pickupHrs };
+  const shiftObj = { type, otHrs, dtHrs, lwopHrs: safeLwop, gaveHrs: safeGave, pickupHrs };
   saveShiftEntry(currentDetailDate, shiftObj);
   closeDayDetail();
   renderCalendar();
