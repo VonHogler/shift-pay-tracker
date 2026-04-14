@@ -1354,6 +1354,19 @@
       <div class="settings-group-header">Tax Rates</div>
       <div class="settings-row">
         <div>
+          <div class="settings-row-label">Filing status</div>
+          <div class="settings-row-sub">Your federal tax filing status</div>
+        </div>
+        <select id="s-filing-status" class="settings-input wide" style="text-align:left;padding:5px 8px;" onchange="updateWithholdingNote()">
+          <option value="">— select —</option>
+          <option value="single">Single</option>
+          <option value="mfj">Married filing jointly</option>
+          <option value="mfs">Married filing separately</option>
+          <option value="hoh">Head of household</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <div>
           <div class="settings-row-label">OASDI (Social Security)</div>
           <div class="settings-row-sub">Stops at annual wage cap (~$176,100)</div>
         </div>
@@ -1379,7 +1392,7 @@
     </div>
 
     <!-- Withholding Calibration -->
-    <div class="withholding-note">
+    <div class="withholding-note" id="withholding-note">
       ⚠ Federal and state withholding vary by filing status and W-4 elections. Enter the actual amounts from a recent pay stub — the app will scale them proportionally to your earnings each period.
     </div>
     <div class="settings-group">
@@ -1795,6 +1808,17 @@
         ⚠ Federal and state withholding vary by filing status and W-4 elections. These are entered as calibration figures — not calculated from tax tables.
       </div>
 
+      <div class="wizard-field">
+        <label class="wizard-label">Your filing status</label>
+        <select class="wizard-input" id="w-filing-status" style="padding:9px 12px;">
+          <option value="">— select —</option>
+          <option value="single">Single</option>
+          <option value="mfj">Married filing jointly</option>
+          <option value="mfs">Married filing separately</option>
+          <option value="hoh">Head of household</option>
+        </select>
+      </div>
+
       <div class="wizard-section-label">FICA &amp; state disability rates</div>
       <div class="wizard-input-row">
         <div class="wizard-field">
@@ -1860,6 +1884,32 @@
         Your settings are saved. The calendar will show your scheduled shifts automatically based on your bid block.<br><br>
         Tap any day to log overtime, double time, or exceptions. Everything adjusts in real time.
       </div>
+
+      <!-- Tip jar -->
+      <div style="background:#f5f5f0;border:0.5px solid #e0e0d8;border-radius:12px;padding:14px;margin-bottom:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:6px;">☕</div>
+        <div style="font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:4px;">This app is free — tips are appreciated</div>
+        <div style="font-size:12px;color:#888880;margin-bottom:10px;">If it saves you time, consider buying me a coffee.</div>
+        <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener"
+           style="display:inline-block;background:#1a1a18;color:#fff;font-size:13px;font-weight:600;font-family:inherit;padding:8px 20px;border-radius:8px;text-decoration:none;">
+          Support on Ko-fi
+        </a>
+      </div>
+
+      <!-- Share CTA -->
+      <div style="background:#f5f5f0;border:0.5px solid #e0e0d8;border-radius:12px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:4px;">📢 Know someone who'd use this?</div>
+        <div style="font-size:12px;color:#888880;margin-bottom:10px;">Share it with your crew — it's free for everyone.</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div id="wiz-share-text" style="flex:1;font-size:11px;color:#666660;background:#fff;border:0.5px solid #d8d8d0;border-radius:7px;padding:7px 10px;line-height:1.5;">
+            Hey, this app estimates your Southwest paycheck — check it out: https://vonhogler.github.io/shift-pay-tracker/
+          </div>
+          <button onclick="wizCopyShare()" style="font-size:12px;font-weight:600;font-family:inherit;background:#1a1a18;color:#fff;border:none;border-radius:7px;padding:8px 12px;cursor:pointer;white-space:nowrap;" id="wiz-copy-btn">
+            Copy
+          </button>
+        </div>
+      </div>
+
       <button class="wizard-next-btn" onclick="wizFinish()">Open my calendar →</button>
     </div>
 
@@ -1992,6 +2042,7 @@ const DEFAULTS = {
   'oasdi':              6.2,
   'medicare':           1.45,
   'casdi':              1.3,
+  'filing-status':      '',   // single | mfj | mfs | hoh — blank = not set
 
   // Withholding calibration
   'fed-wh':             0,
@@ -2131,6 +2182,27 @@ function loadSettings() {
   // Next bid month string
   const nextMonthEl = document.getElementById('s-bid-next-month');
   if (nextMonthEl) nextMonthEl.value = saved['bid-next-month'] || '';
+
+  // Update withholding note to reflect saved filing status
+  updateWithholdingNote();
+}
+
+function updateWithholdingNote() {
+  const el = document.getElementById('s-filing-status');
+  const note = document.getElementById('withholding-note');
+  if (!el || !note) return;
+  const labels = {
+    single: 'Single',
+    mfj:    'Married filing jointly',
+    mfs:    'Married filing separately',
+    hoh:    'Head of household',
+  };
+  const status = labels[el.value];
+  if (status) {
+    note.innerHTML = `⚠ Federal and state withholding vary by filing status and W-4 elections. Your current filing status: <strong>${status}</strong>. Enter the actual amounts from a recent pay stub — the app will scale them proportionally to your earnings each period.`;
+  } else {
+    note.innerHTML = '⚠ Federal and state withholding vary by filing status and W-4 elections. Enter the actual amounts from a recent pay stub — the app will scale them proportionally to your earnings each period.';
+  }
 }
 
 function saveSettings() {
@@ -2141,7 +2213,9 @@ function saveSettings() {
     if (Array.isArray(DEFAULTS[key])) continue;
     const el = document.getElementById('s-' + key);
     if (!el) continue;
-    if (el.type === 'date' || el.type === 'month') {
+    if (el.tagName === 'SELECT') {
+      data[key] = el.value;
+    } else if (el.type === 'date' || el.type === 'month') {
       data[key] = el.value.trim();
     } else {
       data[key] = parseFloat(el.value) || 0;
@@ -3126,9 +3200,10 @@ function wizSaveAndFinish() {
   data['other-aftertax'] = parseFloat(document.getElementById('w-other-aftertax').value) || 0;
 
   // Taxes
-  data['oasdi']    = parseFloat(document.getElementById('w-oasdi').value)    || 6.2;
-  data['medicare'] = parseFloat(document.getElementById('w-medicare').value) || 1.45;
-  data['casdi']    = parseFloat(document.getElementById('w-casdi').value)    || 1.3;
+  data['oasdi']          = parseFloat(document.getElementById('w-oasdi').value)          || 6.2;
+  data['medicare']       = parseFloat(document.getElementById('w-medicare').value)       || 1.45;
+  data['casdi']          = parseFloat(document.getElementById('w-casdi').value)          || 1.3;
+  data['filing-status']  = document.getElementById('w-filing-status').value              || '';
   data['fed-wh']   = parseFloat(document.getElementById('w-fed-wh').value)   || 0;
   data['ca-wh']    = parseFloat(document.getElementById('w-ca-wh').value)    || 0;
   data['wh-basis'] = parseFloat(document.getElementById('w-wh-basis').value) || 0;
@@ -3137,6 +3212,24 @@ function wizSaveAndFinish() {
 
   // Advance to done screen
   wizGoTo(6);
+}
+
+function wizCopyShare() {
+  const text = "Hey, this app estimates your Southwest paycheck — check it out: https://vonhogler.github.io/shift-pay-tracker/";
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('wiz-copy-btn');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  }).catch(() => {
+    // Fallback for older browsers
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    const btn = document.getElementById('wiz-copy-btn');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  });
 }
 
 function wizFinish() {
