@@ -1383,9 +1383,12 @@
         </div>
       </div>
       <div class="settings-row">
-        <div class="settings-row-label">State disability (SDI)</div>
+        <div>
+          <div class="settings-row-label">State disability / SUI</div>
+          <div class="settings-row-sub">SDI, SUI, or equivalent — varies by state</div>
+        </div>
         <div class="input-suffix">
-          <input type="number" id="s-casdi" value="" step="0.05" min="0" placeholder="1.3">
+          <input type="number" id="s-casdi" value="" step="0.05" min="0" placeholder="0">
           <span>%</span>
         </div>
       </div>
@@ -1509,9 +1512,9 @@
         <div class="help-subsection">Tax calibration</div>
         <div class="help-note">Federal and state income tax withholding depends on your W-4 elections and filing status — the app can't calculate it from scratch. Instead, give it one real pay stub as a reference and it will scale from there.</div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>Federal withholding</strong> — look for "FED TAX," "FEDERAL INCOME TAX," or "FIT" on your stub. Enter the dollar amount withheld that period.</div></div>
-        <div class="help-step"><span class="help-step-num">→</span><div><strong>State withholding</strong> — look for "CA TAX," "STATE INCOME TAX," or "SIT." Enter the dollar amount withheld.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>State withholding</strong> — look for your state's withholding label on your stub — common labels include CA TAX, NY TAX, STATE TAX, STATE INCOME TAX, or SIT depending on your state. Enter the dollar amount withheld.</div></div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>Gross pay that period</strong> — the gross pay from the same stub you used above. The app uses this to build a ratio and scales your withholding proportionally each period.</div></div>
-        <div class="help-note">You can skip tax calibration during setup and add it later in Settings. OASDI (6.2%), Medicare (1.45%), and CA SDI (1.3%) are percentage-based and calculate automatically.</div>
+        <div class="help-note">You can skip tax calibration during setup and add it later in Settings. OASDI (6.2%) and Medicare (1.45%) are percentage-based and calculate automatically. Enter your state's disability/SUI rate manually — it varies by state.</div>
       </div>
     </div>
 
@@ -1837,9 +1840,9 @@
         </div>
       </div>
       <div class="wizard-field">
-        <label class="wizard-label">State disability (SDI)</label>
+        <label class="wizard-label">State disability / SUI <span class="wizard-label-sub">— SDI, SUI, or equivalent</span></label>
         <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
-          <input type="number" class="wizard-input" id="w-casdi" step="0.05" min="0" value="1.3" style="border:none;background:transparent;text-align:right;padding-right:4px;">
+          <input type="number" class="wizard-input" id="w-casdi" step="0.05" min="0" placeholder="0" style="border:none;background:transparent;text-align:right;padding-right:4px;">
           <span style="font-size:14px;color:#888880;padding:9px 12px 9px 0;">%</span>
         </div>
       </div>
@@ -2041,7 +2044,7 @@ const DEFAULTS = {
   // Tax rates
   'oasdi':              6.2,
   'medicare':           1.45,
-  'casdi':              1.3,
+  'casdi':              0,    // varies by state — user enters their own rate
   'filing-status':      '',   // single | mfj | mfs | hoh — blank = not set
 
   // Withholding calibration
@@ -2742,7 +2745,7 @@ function renderPayScreen() {
     rows += deductRow('State withholding', b.caWH);
     rows += deductRow('OASDI', b.oasdi);
     rows += deductRow('Medicare', b.medicare);
-    rows += deductRow('State disability (SDI)', b.casdi);
+    rows += deductRow('State disability / SUI', b.casdi);
     if (b.loan    > 0) rows += deductRow('401(k) loan payment', b.loan);
     if (b.stock   > 0) rows += deductRow('Stock purchase plan', b.stock);
     if (b.union   > 0) rows += deductRow('Union dues', b.union);
@@ -3202,7 +3205,7 @@ function wizSaveAndFinish() {
   // Taxes
   data['oasdi']          = parseFloat(document.getElementById('w-oasdi').value)          || 6.2;
   data['medicare']       = parseFloat(document.getElementById('w-medicare').value)       || 1.45;
-  data['casdi']          = parseFloat(document.getElementById('w-casdi').value)          || 1.3;
+  data['casdi']          = parseFloat(document.getElementById('w-casdi').value)          || 0;
   data['filing-status']  = document.getElementById('w-filing-status').value              || '';
   data['fed-wh']   = parseFloat(document.getElementById('w-fed-wh').value)   || 0;
   data['ca-wh']    = parseFloat(document.getElementById('w-ca-wh').value)    || 0;
