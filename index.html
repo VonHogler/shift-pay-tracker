@@ -297,19 +297,46 @@
     flex-shrink: 0;
   }
   .bid-day-name.off { color: #bbb; }
-  .bid-time-input {
+  .bid-time-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .bid-time-part {
     font-size: 13px;
     font-family: inherit;
     color: #1a1a18;
     background: #f5f5f0;
     border: 0.5px solid #d8d8d0;
     border-radius: 7px;
-    padding: 4px 8px;
-    width: 90px;
-    text-align: center;
+    padding: 4px 18px 4px 7px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23aaa'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 5px center;
   }
-  .bid-time-input:focus { outline: none; border-color: #1a1a18; background: #fff; }
-  .bid-time-input.off-day { color: #ccc; background: #fafafa; border-color: #eee; }
+  .bid-time-part.hr  { width: 54px; }
+  .bid-time-part.min { width: 50px; }
+  .bid-time-part.ap  { width: 54px; }
+  .bid-time-part:focus { outline: none; border-color: #1a1a18; background-color: #fff; }
+  .bid-time-part.off-day { color: #ccc; background-color: #fafafa; border-color: #eee; }
+  .bid-time-off-btn {
+    font-size: 11px;
+    font-family: inherit;
+    color: #ccc;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 0 2px 4px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .bid-time-off-btn.active { color: #aaa; }
+  .bid-time-off-btn.active:hover { color: #e05555; }
   .bid-sub-header {
     font-size: 11px;
     font-weight: 600;
@@ -1017,19 +1044,7 @@
     flex-shrink: 0;
   }
   .wizard-bid-dow.off { color: #bbb; }
-  .wizard-bid-time {
-    font-size: 13px;
-    font-family: inherit;
-    color: #1a1a18;
-    background: #f5f5f0;
-    border: 0.5px solid #d8d8d0;
-    border-radius: 7px;
-    padding: 4px 8px;
-    flex: 1;
-    text-align: center;
-  }
-  .wizard-bid-time:focus { outline: none; border-color: #1a1a18; background: #fff; }
-  .wizard-bid-time.off-day { color: #ccc; background: #fafafa; border-color: #eee; }
+  /* .wizard-bid-time selects now use .bid-time-part — shared with Settings */
   .wizard-hint {
     font-size: 11px;
     color: #aaa;
@@ -1246,13 +1261,13 @@
         <input type="date" id="s-bid-curr-start" class="settings-input wide" value="">
       </div>
       <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-0" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-1" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-2">Tue</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-2" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-3">Wed</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-3" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-4">Thu</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-4" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-5">Fri</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-5" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-curr-times-6" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-0">Sun</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-0-h" onchange="settingsBidTimeChange('curr',0)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-0-m" onchange="settingsBidTimeChange('curr',0)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-0-p" onchange="settingsBidTimeChange('curr',0)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-0-x" onclick="bidTimeClear('s-bid-curr-times-0','lbl-curr-0')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-1">Mon</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-1-h" onchange="settingsBidTimeChange('curr',1)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-1-m" onchange="settingsBidTimeChange('curr',1)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-1-p" onchange="settingsBidTimeChange('curr',1)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-1-x" onclick="bidTimeClear('s-bid-curr-times-1','lbl-curr-1')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-2">Tue</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-2-h" onchange="settingsBidTimeChange('curr',2)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-2-m" onchange="settingsBidTimeChange('curr',2)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-2-p" onchange="settingsBidTimeChange('curr',2)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-2-x" onclick="bidTimeClear('s-bid-curr-times-2','lbl-curr-2')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-3">Wed</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-3-h" onchange="settingsBidTimeChange('curr',3)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-3-m" onchange="settingsBidTimeChange('curr',3)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-3-p" onchange="settingsBidTimeChange('curr',3)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-3-x" onclick="bidTimeClear('s-bid-curr-times-3','lbl-curr-3')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-4">Thu</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-4-h" onchange="settingsBidTimeChange('curr',4)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-4-m" onchange="settingsBidTimeChange('curr',4)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-4-p" onchange="settingsBidTimeChange('curr',4)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-4-x" onclick="bidTimeClear('s-bid-curr-times-4','lbl-curr-4')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-5">Fri</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-5-h" onchange="settingsBidTimeChange('curr',5)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-5-m" onchange="settingsBidTimeChange('curr',5)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-5-p" onchange="settingsBidTimeChange('curr',5)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-5-x" onclick="bidTimeClear('s-bid-curr-times-5','lbl-curr-5')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-curr-6">Sat</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-curr-times-6-h" onchange="settingsBidTimeChange('curr',6)"></select><select class="bid-time-part min off-day" id="s-bid-curr-times-6-m" onchange="settingsBidTimeChange('curr',6)"></select><select class="bid-time-part ap off-day" id="s-bid-curr-times-6-p" onchange="settingsBidTimeChange('curr',6)"></select><button class="bid-time-off-btn" id="s-bid-curr-times-6-x" onclick="bidTimeClear('s-bid-curr-times-6','lbl-curr-6')" type="button">Off</button></div></div>
 
       <!-- Previous bid -->
       <div class="bid-sub-header" style="margin-top:4px;">Previous bid</div>
@@ -1264,13 +1279,13 @@
         <input type="date" id="s-bid-prev-start" class="settings-input wide" value="">
       </div>
       <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-0" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-1" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-2">Tue</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-2" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-3">Wed</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-3" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-4">Thu</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-4" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-5">Fri</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-5" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-prev-times-6" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-0">Sun</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-0-h" onchange="settingsBidTimeChange('prev',0)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-0-m" onchange="settingsBidTimeChange('prev',0)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-0-p" onchange="settingsBidTimeChange('prev',0)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-0-x" onclick="bidTimeClear('s-bid-prev-times-0','lbl-prev-0')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-1">Mon</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-1-h" onchange="settingsBidTimeChange('prev',1)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-1-m" onchange="settingsBidTimeChange('prev',1)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-1-p" onchange="settingsBidTimeChange('prev',1)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-1-x" onclick="bidTimeClear('s-bid-prev-times-1','lbl-prev-1')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-2">Tue</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-2-h" onchange="settingsBidTimeChange('prev',2)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-2-m" onchange="settingsBidTimeChange('prev',2)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-2-p" onchange="settingsBidTimeChange('prev',2)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-2-x" onclick="bidTimeClear('s-bid-prev-times-2','lbl-prev-2')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-3">Wed</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-3-h" onchange="settingsBidTimeChange('prev',3)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-3-m" onchange="settingsBidTimeChange('prev',3)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-3-p" onchange="settingsBidTimeChange('prev',3)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-3-x" onclick="bidTimeClear('s-bid-prev-times-3','lbl-prev-3')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-4">Thu</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-4-h" onchange="settingsBidTimeChange('prev',4)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-4-m" onchange="settingsBidTimeChange('prev',4)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-4-p" onchange="settingsBidTimeChange('prev',4)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-4-x" onclick="bidTimeClear('s-bid-prev-times-4','lbl-prev-4')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-5">Fri</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-5-h" onchange="settingsBidTimeChange('prev',5)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-5-m" onchange="settingsBidTimeChange('prev',5)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-5-p" onchange="settingsBidTimeChange('prev',5)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-5-x" onclick="bidTimeClear('s-bid-prev-times-5','lbl-prev-5')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-prev-6">Sat</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-prev-times-6-h" onchange="settingsBidTimeChange('prev',6)"></select><select class="bid-time-part min off-day" id="s-bid-prev-times-6-m" onchange="settingsBidTimeChange('prev',6)"></select><select class="bid-time-part ap off-day" id="s-bid-prev-times-6-p" onchange="settingsBidTimeChange('prev',6)"></select><button class="bid-time-off-btn" id="s-bid-prev-times-6-x" onclick="bidTimeClear('s-bid-prev-times-6','lbl-prev-6')" type="button">Off</button></div></div>
 
       <!-- Next bid -->
       <div class="bid-sub-header" style="margin-top:12px;">Next bid <span style="font-weight:400;color:#aaa;font-size:11px;">— auto-activates on first Sunday of bid month</span></div>
@@ -1282,13 +1297,13 @@
         <input type="month" id="s-bid-next-month" class="settings-input wide" value="" placeholder="YYYY-MM">
       </div>
       <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-0" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-1" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-2">Tue</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-2" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-3">Wed</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-3" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-4">Thu</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-4" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-5">Fri</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-5" value=""></div>
-      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-6" value=""></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-0">Sun</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-0-h" onchange="settingsBidTimeChange('next',0)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-0-m" onchange="settingsBidTimeChange('next',0)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-0-p" onchange="settingsBidTimeChange('next',0)"></select><button class="bid-time-off-btn" id="s-bid-next-times-0-x" onclick="bidTimeClear('s-bid-next-times-0','lbl-next-0')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-1">Mon</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-1-h" onchange="settingsBidTimeChange('next',1)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-1-m" onchange="settingsBidTimeChange('next',1)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-1-p" onchange="settingsBidTimeChange('next',1)"></select><button class="bid-time-off-btn" id="s-bid-next-times-1-x" onclick="bidTimeClear('s-bid-next-times-1','lbl-next-1')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-2">Tue</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-2-h" onchange="settingsBidTimeChange('next',2)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-2-m" onchange="settingsBidTimeChange('next',2)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-2-p" onchange="settingsBidTimeChange('next',2)"></select><button class="bid-time-off-btn" id="s-bid-next-times-2-x" onclick="bidTimeClear('s-bid-next-times-2','lbl-next-2')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-3">Wed</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-3-h" onchange="settingsBidTimeChange('next',3)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-3-m" onchange="settingsBidTimeChange('next',3)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-3-p" onchange="settingsBidTimeChange('next',3)"></select><button class="bid-time-off-btn" id="s-bid-next-times-3-x" onclick="bidTimeClear('s-bid-next-times-3','lbl-next-3')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-4">Thu</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-4-h" onchange="settingsBidTimeChange('next',4)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-4-m" onchange="settingsBidTimeChange('next',4)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-4-p" onchange="settingsBidTimeChange('next',4)"></select><button class="bid-time-off-btn" id="s-bid-next-times-4-x" onclick="bidTimeClear('s-bid-next-times-4','lbl-next-4')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-5">Fri</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-5-h" onchange="settingsBidTimeChange('next',5)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-5-m" onchange="settingsBidTimeChange('next',5)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-5-p" onchange="settingsBidTimeChange('next',5)"></select><button class="bid-time-off-btn" id="s-bid-next-times-5-x" onclick="bidTimeClear('s-bid-next-times-5','lbl-next-5')" type="button">Off</button></div></div>
+      <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-6">Sat</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="s-bid-next-times-6-h" onchange="settingsBidTimeChange('next',6)"></select><select class="bid-time-part min off-day" id="s-bid-next-times-6-m" onchange="settingsBidTimeChange('next',6)"></select><select class="bid-time-part ap off-day" id="s-bid-next-times-6-p" onchange="settingsBidTimeChange('next',6)"></select><button class="bid-time-off-btn" id="s-bid-next-times-6-x" onclick="bidTimeClear('s-bid-next-times-6','lbl-next-6')" type="button">Off</button></div></div>
     </div>
 
     <!-- Pre-Tax Deductions -->
@@ -1698,13 +1713,13 @@
 
       <div class="wizard-section-label">Shift start times (blank = day off)</div>
       <div class="wizard-bid-grid" id="w-bid-grid">
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-0">Sun</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-0" oninput="wizBidTimeChange(0)"></div>
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-1">Mon</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-1" oninput="wizBidTimeChange(1)"></div>
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-2">Tue</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-2" oninput="wizBidTimeChange(2)"></div>
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-3">Wed</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-3" oninput="wizBidTimeChange(3)"></div>
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-4">Thu</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-4" oninput="wizBidTimeChange(4)"></div>
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-5">Fri</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-5" oninput="wizBidTimeChange(5)"></div>
-        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-6">Sat</span><input type="time" class="wizard-bid-time off-day" id="w-bid-times-6" oninput="wizBidTimeChange(6)"></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-0">Sun</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-0-h" onchange="wizBidTimeChange(0)"></select><select class="bid-time-part min off-day" id="w-bid-times-0-m" onchange="wizBidTimeChange(0)"></select><select class="bid-time-part ap off-day" id="w-bid-times-0-p" onchange="wizBidTimeChange(0)"></select><button class="bid-time-off-btn" id="w-bid-times-0-x" onclick="bidTimeClear('w-bid-times-0','wlbl-0')" type="button">Off</button></div></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-1">Mon</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-1-h" onchange="wizBidTimeChange(1)"></select><select class="bid-time-part min off-day" id="w-bid-times-1-m" onchange="wizBidTimeChange(1)"></select><select class="bid-time-part ap off-day" id="w-bid-times-1-p" onchange="wizBidTimeChange(1)"></select><button class="bid-time-off-btn" id="w-bid-times-1-x" onclick="bidTimeClear('w-bid-times-1','wlbl-1')" type="button">Off</button></div></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-2">Tue</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-2-h" onchange="wizBidTimeChange(2)"></select><select class="bid-time-part min off-day" id="w-bid-times-2-m" onchange="wizBidTimeChange(2)"></select><select class="bid-time-part ap off-day" id="w-bid-times-2-p" onchange="wizBidTimeChange(2)"></select><button class="bid-time-off-btn" id="w-bid-times-2-x" onclick="bidTimeClear('w-bid-times-2','wlbl-2')" type="button">Off</button></div></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-3">Wed</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-3-h" onchange="wizBidTimeChange(3)"></select><select class="bid-time-part min off-day" id="w-bid-times-3-m" onchange="wizBidTimeChange(3)"></select><select class="bid-time-part ap off-day" id="w-bid-times-3-p" onchange="wizBidTimeChange(3)"></select><button class="bid-time-off-btn" id="w-bid-times-3-x" onclick="bidTimeClear('w-bid-times-3','wlbl-3')" type="button">Off</button></div></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-4">Thu</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-4-h" onchange="wizBidTimeChange(4)"></select><select class="bid-time-part min off-day" id="w-bid-times-4-m" onchange="wizBidTimeChange(4)"></select><select class="bid-time-part ap off-day" id="w-bid-times-4-p" onchange="wizBidTimeChange(4)"></select><button class="bid-time-off-btn" id="w-bid-times-4-x" onclick="bidTimeClear('w-bid-times-4','wlbl-4')" type="button">Off</button></div></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-5">Fri</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-5-h" onchange="wizBidTimeChange(5)"></select><select class="bid-time-part min off-day" id="w-bid-times-5-m" onchange="wizBidTimeChange(5)"></select><select class="bid-time-part ap off-day" id="w-bid-times-5-p" onchange="wizBidTimeChange(5)"></select><button class="bid-time-off-btn" id="w-bid-times-5-x" onclick="bidTimeClear('w-bid-times-5','wlbl-5')" type="button">Off</button></div></div>
+        <div class="wizard-bid-row"><span class="wizard-bid-dow off" id="wlbl-6">Sat</span><div class="bid-time-group"><select class="bid-time-part hr off-day" id="w-bid-times-6-h" onchange="wizBidTimeChange(6)"></select><select class="bid-time-part min off-day" id="w-bid-times-6-m" onchange="wizBidTimeChange(6)"></select><select class="bid-time-part ap off-day" id="w-bid-times-6-p" onchange="wizBidTimeChange(6)"></select><button class="bid-time-off-btn" id="w-bid-times-6-x" onclick="bidTimeClear('w-bid-times-6','wlbl-6')" type="button">Off</button></div></div>
       </div>
       <div class="wizard-hint">Tip: shifts are always 8.5 hrs (8.0 paid). The end time is calculated automatically.</div>
 
@@ -2141,6 +2156,113 @@ function showToast(msg) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// BID TIME SELECT DROPDOWNS — three-part (H / Min / AM/PM)
+// ═══════════════════════════════════════════════════════════════
+function buildHourOptions() {
+  let s = '<option value="">—</option>';
+  for (let h = 1; h <= 12; h++) s += `<option value="${h}">${h}</option>`;
+  return s;
+}
+function buildMinOptions() {
+  return '<option value="">—</option><option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>';
+}
+function buildApOptions() {
+  return '<option value="">—</option><option value="AM">AM</option><option value="PM">PM</option>';
+}
+
+function initBidTimeSelects() {
+  const hOpts = buildHourOptions();
+  const mOpts = buildMinOptions();
+  const aOpts = buildApOptions();
+  const bases = [];
+  for (const bid of ['curr', 'prev', 'next']) {
+    for (let i = 0; i < 7; i++) bases.push(`s-bid-${bid}-times-${i}`);
+  }
+  for (let i = 0; i < 7; i++) bases.push(`w-bid-times-${i}`);
+
+  for (const base of bases) {
+    const hEl = document.getElementById(base + '-h');
+    const mEl = document.getElementById(base + '-m');
+    const pEl = document.getElementById(base + '-p');
+    if (hEl) hEl.innerHTML = hOpts;
+    if (mEl) mEl.innerHTML = mOpts;
+    if (pEl) pEl.innerHTML = aOpts;
+  }
+}
+
+// Read three selects → 'HH:MM' (24h) or '' if any part blank
+function readBidTimeParts(base) {
+  const hEl = document.getElementById(base + '-h');
+  const mEl = document.getElementById(base + '-m');
+  const pEl = document.getElementById(base + '-p');
+  if (!hEl || !mEl || !pEl) return '';
+  const h12 = hEl.value;
+  const min = mEl.value;
+  const ap  = pEl.value;
+  if (!h12 || !min || !ap) return '';
+  let h24 = parseInt(h12, 10);
+  if (ap === 'AM' && h24 === 12) h24 = 0;
+  if (ap === 'PM' && h24 !== 12) h24 += 12;
+  return String(h24).padStart(2, '0') + ':' + min;
+}
+
+// Set three selects from 'HH:MM' (24h) string or '' for day off
+function setBidTimeParts(base, hhmm) {
+  const hEl = document.getElementById(base + '-h');
+  const mEl = document.getElementById(base + '-m');
+  const pEl = document.getElementById(base + '-p');
+  const xEl = document.getElementById(base + '-x');
+  if (!hEl || !mEl || !pEl) return;
+  if (!hhmm) {
+    hEl.value = ''; mEl.value = ''; pEl.value = '';
+    [hEl, mEl, pEl].forEach(el => el.classList.add('off-day'));
+    if (xEl) { xEl.classList.remove('active'); xEl.textContent = 'Off'; }
+    return;
+  }
+  const [h24str, minStr] = hhmm.split(':');
+  const h24 = parseInt(h24str, 10);
+  const ap  = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = ((h24 % 12) || 12);
+  hEl.value = String(h12);
+  mEl.value = minStr;
+  pEl.value = ap;
+  [hEl, mEl, pEl].forEach(el => el.classList.remove('off-day'));
+  if (xEl) { xEl.classList.add('active'); xEl.textContent = '×'; }
+}
+
+// Update day-name label + off-btn state after any part changes
+function applyBidTimeState(base, lblId) {
+  const val = readBidTimeParts(base);
+  const hEl = document.getElementById(base + '-h');
+  const mEl = document.getElementById(base + '-m');
+  const pEl = document.getElementById(base + '-p');
+  const xEl = document.getElementById(base + '-x');
+  const lbl = document.getElementById(lblId);
+  const hVal  = hEl ? hEl.value : '';
+  const isOff = val === '';
+  const isBlank = hVal === ''; // all three gray only when hour is unset
+  if (hEl) hEl.classList.toggle('off-day', isBlank);
+  if (mEl) mEl.classList.toggle('off-day', isBlank);
+  if (pEl) pEl.classList.toggle('off-day', isBlank);
+  if (lbl) lbl.classList.toggle('off', isOff);
+  if (xEl) {
+    xEl.classList.toggle('active', !isBlank);
+    xEl.textContent = isBlank ? 'Off' : '×';
+  }
+}
+
+function bidTimeClear(base, lblId) {
+  setBidTimeParts(base, '');
+  applyBidTimeState(base, lblId);
+}
+
+function settingsBidTimeChange(bid, i) {
+  const base  = `s-bid-${bid}-times-${i}`;
+  const lblId = `lbl-${bid}-${i}`;
+  applyBidTimeState(base, lblId);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SETTINGS: getSettings / loadSettings / saveSettings / resetSettings
 // ═══════════════════════════════════════════════════════════════
 function getSettings() {
@@ -2171,14 +2293,11 @@ function loadSettings() {
     const key   = `bid-${bid}-times`;
     const times = saved[key] !== undefined ? saved[key] : DEFAULTS[key];
     for (let i = 0; i < 7; i++) {
-      const el  = document.getElementById(`s-bid-${bid}-times-${i}`);
-      const lbl = document.getElementById(`lbl-${bid}-${i}`);
-      if (!el) continue;
+      const base  = `s-bid-${bid}-times-${i}`;
+      const lblId = `lbl-${bid}-${i}`;
       const t = Array.isArray(times) ? (times[i] || '') : '';
-      el.value = t;
-      const isOff = t === '';
-      el.classList.toggle('off-day', isOff);
-      if (lbl) lbl.classList.toggle('off', isOff);
+      setBidTimeParts(base, t);
+      applyBidTimeState(base, lblId);
     }
   }
 
@@ -2229,19 +2348,13 @@ function saveSettings() {
   for (const bid of ['curr', 'prev', 'next']) {
     const times = [];
     for (let i = 0; i < 7; i++) {
-      const el = document.getElementById(`s-bid-${bid}-times-${i}`);
-      times.push(el ? el.value.trim() : '');
+      times.push(readBidTimeParts(`s-bid-${bid}-times-${i}`));
     }
     data[`bid-${bid}-times`] = times;
 
-    // Update label styles immediately
+    // Update label/off-btn styles immediately
     for (let i = 0; i < 7; i++) {
-      const el  = document.getElementById(`s-bid-${bid}-times-${i}`);
-      const lbl = document.getElementById(`lbl-${bid}-${i}`);
-      if (!el) continue;
-      const isOff = el.value.trim() === '';
-      el.classList.toggle('off-day', isOff);
-      if (lbl) lbl.classList.toggle('off', isOff);
+      applyBidTimeState(`s-bid-${bid}-times-${i}`, `lbl-${bid}-${i}`);
     }
   }
 
@@ -2259,7 +2372,7 @@ function resetSettings() {
   if (!confirm('Reset all settings to blank? This cannot be undone.')) return;
   localStorage.removeItem('shiftpay-settings');
   // Clear all inputs manually
-  document.querySelectorAll('.settings-input, .settings-input.wide, .bid-time-input').forEach(el => {
+  document.querySelectorAll('.settings-input, .settings-input.wide, select.bid-time-part').forEach(el => {
     el.value = '';
   });
   document.querySelectorAll('.input-prefix input, .input-suffix input').forEach(el => {
@@ -3157,12 +3270,7 @@ function wizSkipTax() {
 }
 
 function wizBidTimeChange(i) {
-  const el  = document.getElementById('w-bid-times-' + i);
-  const lbl = document.getElementById('wlbl-' + i);
-  if (!el) return;
-  const isOff = el.value.trim() === '';
-  el.classList.toggle('off-day', isOff);
-  if (lbl) lbl.classList.toggle('off', isOff);
+  applyBidTimeState(`w-bid-times-${i}`, `wlbl-${i}`);
 }
 
 function wizSaveAndFinish() {
@@ -3180,8 +3288,7 @@ function wizSaveAndFinish() {
   data['bid-curr-start'] = document.getElementById('w-bid-curr-start').value.trim() || '';
   const currTimes = [];
   for (let i = 0; i < 7; i++) {
-    const el = document.getElementById('w-bid-times-' + i);
-    currTimes.push(el ? el.value.trim() : '');
+    currTimes.push(readBidTimeParts(`w-bid-times-${i}`));
   }
   data['bid-curr-times'] = currTimes;
 
@@ -3288,6 +3395,7 @@ function dismissInstall() {
 // INIT
 // ═══════════════════════════════════════════════════════════════
 (function init() {
+  initBidTimeSelects();
   loadShiftData();
   loadSettings();
   checkBidTransition();
