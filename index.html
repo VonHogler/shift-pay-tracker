@@ -929,6 +929,134 @@
     flex-shrink: 0;
   }
 
+  /* ── Install landing screen ── */
+  .install-landing {
+    position: fixed;
+    inset: 0;
+    background: #f5f5f0;
+    z-index: 300;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+  }
+  .install-landing.hidden { display: none; }
+  .install-landing-card {
+    max-width: 420px;
+    width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    border: 0.5px solid #e0e0d8;
+    padding: 2rem 1.5rem 1.5rem;
+  }
+  .install-landing-icon {
+    font-size: 42px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .install-landing-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a18;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .install-landing-desc {
+    font-size: 13px;
+    color: #888880;
+    text-align: center;
+    line-height: 1.55;
+    margin-bottom: 1.75rem;
+  }
+  .install-landing-platform {
+    background: #f9f9f6;
+    border: 0.5px solid #e8e8e0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 1.25rem;
+  }
+  .install-landing-platform-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .install-landing-platform-label.android { background: #E1F5EE; color: #085041; }
+  .install-landing-platform-label.ios     { background: #E6F1FB; color: #042C53; }
+  .install-landing-step {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 7px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: #444440;
+    line-height: 1.5;
+  }
+  .install-landing-step:last-child { margin-bottom: 0; }
+  .install-landing-step-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #1a1a18;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .install-landing-install-btn {
+    width: 100%;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 11px 0;
+    border-radius: 10px;
+    border: none;
+    background: #5DCAA5;
+    color: #fff;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: opacity 0.15s;
+  }
+  .install-landing-install-btn:active { opacity: 0.8; }
+  .install-landing-cta {
+    width: 100%;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 11px 0;
+    border-radius: 10px;
+    border: none;
+    background: #1a1a18;
+    color: #fff;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+  }
+  .install-landing-cta:active { opacity: 0.7; }
+  .install-landing-skip {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    font-family: inherit;
+    color: #aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    width: 100%;
+  }
+
   /* ── First-run wizard ── */
   .wizard-overlay {
     position: fixed;
@@ -1618,6 +1746,40 @@
   <div class="toast" id="toast"></div>
 
 </div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════ INSTALL LANDING -->
+<div class="install-landing hidden" id="install-landing">
+  <div class="install-landing-card">
+    <div class="install-landing-icon">✈️</div>
+    <div class="install-landing-title">Shift Pay Tracker</div>
+    <div class="install-landing-desc">Estimate your paycheck before it hits your account.</div>
+
+    <!-- iOS instructions -->
+    <div class="install-landing-platform" id="landing-ios" style="display:none;">
+      <span class="install-landing-platform-label ios">iPhone / iPad — Safari</span>
+      <div class="install-landing-step"><span class="install-landing-step-num">1</span><div>Open this page in <strong>Safari</strong> (required for install on iOS).</div></div>
+      <div class="install-landing-step"><span class="install-landing-step-num">2</span><div>Tap the <strong>Share button</strong> (⬆ box with arrow) at the bottom of Safari.</div></div>
+      <div class="install-landing-step"><span class="install-landing-step-num">3</span><div>Scroll down and tap <strong>"Add to Home Screen"</strong>, then tap <strong>Add</strong>.</div></div>
+    </div>
+
+    <!-- Android instructions + install button -->
+    <div class="install-landing-platform" id="landing-android" style="display:none;">
+      <span class="install-landing-platform-label android">Android — Chrome</span>
+      <div id="landing-android-prompt">
+        <div class="install-landing-step"><span class="install-landing-step-num">1</span><div>Tap the button below — Chrome will ask you to install.</div></div>
+        <button class="install-landing-install-btn" id="landing-install-btn" onclick="landingInstall()">📲 Install app</button>
+      </div>
+      <div id="landing-android-manual" style="display:none;">
+        <div class="install-landing-step"><span class="install-landing-step-num">1</span><div>Tap the <strong>three-dot menu (⋮)</strong> in Chrome (top right).</div></div>
+        <div class="install-landing-step"><span class="install-landing-step-num">2</span><div>Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</div></div>
+        <div class="install-landing-step"><span class="install-landing-step-num">3</span><div>Tap <strong>Install</strong> on the confirmation prompt.</div></div>
+      </div>
+    </div>
+
+    <button class="install-landing-cta" onclick="dismissLanding()">I've installed it — set up my account →</button>
+    <button class="install-landing-skip" onclick="dismissLanding()">Skip — set up in browser</button>
+  </div>
+</div><!-- /install-landing -->
 
 <!-- ═══════════════════════════════════════════ FIRST-RUN WIZARD -->
 <div class="wizard-overlay hidden" id="wizard-overlay">
@@ -3392,6 +3554,53 @@ function dismissInstall() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// INSTALL LANDING SCREEN
+// ═══════════════════════════════════════════════════════════════
+function showInstallLanding() {
+  const overlay = document.getElementById('install-landing');
+  if (!overlay) return;
+
+  // Detect platform
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  if (isIOS) {
+    document.getElementById('landing-ios').style.display = 'block';
+  } else {
+    document.getElementById('landing-android').style.display = 'block';
+    // Show prompt button if available, manual instructions if not
+    if (deferredInstallPrompt) {
+      document.getElementById('landing-android-prompt').style.display = 'block';
+      document.getElementById('landing-android-manual').style.display = 'none';
+    } else {
+      document.getElementById('landing-android-prompt').style.display = 'none';
+      document.getElementById('landing-android-manual').style.display = 'block';
+    }
+  }
+
+  overlay.classList.remove('hidden');
+}
+
+function landingInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
+      deferredInstallPrompt = null;
+    });
+  } else {
+    // Prompt no longer available — switch to manual instructions
+    document.getElementById('landing-android-prompt').style.display = 'none';
+    document.getElementById('landing-android-manual').style.display = 'block';
+  }
+}
+
+function dismissLanding() {
+  document.getElementById('install-landing').classList.add('hidden');
+  localStorage.setItem('shiftpay-install-shown', '1');
+  wizShow();
+}
+
+// ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
 (function init() {
@@ -3403,10 +3612,18 @@ function dismissInstall() {
   updateMetrics();
   initKofiBanner();
 
-  // Show wizard if no settings have been saved yet
-  const hasSettings = !!localStorage.getItem('shiftpay-settings');
+  // New-user onboarding: landing → wizard
+  const hasSettings   = !!localStorage.getItem('shiftpay-settings');
+  const landingShown  = !!localStorage.getItem('shiftpay-install-shown');
+  const isStandalone  = window.navigator.standalone === true ||
+                        window.matchMedia('(display-mode: standalone)').matches;
+
   if (!hasSettings) {
-    wizShow();
+    if (isStandalone || landingShown) {
+      wizShow();
+    } else {
+      showInstallLanding();
+    }
   }
 
   // PWA service worker registration
