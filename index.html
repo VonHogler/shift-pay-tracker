@@ -1656,8 +1656,11 @@
         Estimate your paycheck before it hits your account. Tracks regular shifts, overtime, and double time — automatically calculated from your bid block schedule.<br><br>
         Takes about 2 minutes to set up. You can always edit everything later in Settings.
       </div>
-      <div class="wizard-nav">
+      <div class="wizard-nav" style="flex-direction: column;">
         <button class="wizard-next-btn" onclick="wizNext()">Get started →</button>
+        <div style="text-align: center;">
+          <button class="wizard-skip-btn" onclick="restoreRecords(wizHide)">Already have a backup? Restore your records</button>
+        </div>
       </div>
     </div>
 
@@ -2327,7 +2330,7 @@ function saveRecords() {
   showToast('Records saved ✓ — find the file in your Downloads folder.');
 }
 
-function restoreRecords() {
+function restoreRecords(afterRestore) {
   const input    = document.createElement('input');
   input.type     = 'file';
   input.accept   = '.json';
@@ -2339,7 +2342,7 @@ function restoreRecords() {
       try {
         const data = JSON.parse(ev.target.result);
         if (!data['shiftpay-settings'] && !data['shiftpay-shifts']) {
-          showToast("That file doesn’t look right — please select a ShiftPay backup file.");
+          showToast("That file doesn't look right — please select a ShiftPay backup file.");
           return;
         }
         if (data['shiftpay-settings']) {
@@ -2352,9 +2355,10 @@ function restoreRecords() {
         loadSettings();
         renderCalendar();
         updateMetrics();
+        if (typeof afterRestore === 'function') afterRestore();
         showToast('Records restored ✓');
       } catch (err) {
-        showToast("That file doesn’t look right — please select a ShiftPay backup file.");
+        showToast("That file doesn't look right — please select a ShiftPay backup file.");
       }
     };
     reader.readAsText(file);
