@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a18">
-<title>Shift Pay Tracker</title>
+<title>ShiftComp</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
@@ -1124,7 +1124,7 @@
 <div class="app">
 
   <div class="nav">
-    <span class="nav-title">Shift pay</span>
+    <span class="nav-title">ShiftComp</span>
     <div class="nav-tabs">
       <button class="tab active" onclick="switchTab('calendar')">Calendar</button>
       <button class="tab" onclick="switchTab('pay')">Pay</button>
@@ -1461,7 +1461,7 @@
   <div id="screen-help" class="screen">
 
     <div class="help-intro">
-      Everything you need to set up and use Shift Pay Tracker — bookmark this tab for reference.
+      Everything you need to set up and use ShiftComp — bookmark this tab for reference.
     </div>
 
     <!-- Section: How the app works -->
@@ -1470,7 +1470,7 @@
         <span>📋 How this app works</span><span class="help-chevron" id="chev-how">›</span>
       </div>
       <div class="help-body" id="hbody-how">
-        <p>Shift Pay Tracker estimates your paycheck before it hits your account. Here's the flow:</p>
+        <p>ShiftComp estimates your paycheck before it hits your account. Here's the flow:</p>
         <div class="help-step"><span class="help-step-num">1</span><div><strong>You set up your bid block</strong> in Settings — your scheduled workdays and start times for the ~5-week period.</div></div>
         <div class="help-step"><span class="help-step-num">2</span><div><strong>The calendar fills in automatically.</strong> Any day in your bid block schedule shows as a regular shift (green). Days off are blank.</div></div>
         <div class="help-step"><span class="help-step-num">3</span><div><strong>You log exceptions by tapping a day</strong> — overtime, double time, left early, gave a shift, or picked one up. Only log what's different from your normal schedule.</div></div>
@@ -1651,7 +1651,7 @@
     <!-- Step 1: Welcome -->
     <div class="wizard-step active" id="wstep-1">
       <div class="wizard-icon">✈️</div>
-      <div class="wizard-title">Shift Pay Tracker</div>
+      <div class="wizard-title">ShiftComp</div>
       <div class="wizard-desc">
         Estimate your paycheck before it hits your account. Tracks regular shifts, overtime, and double time — automatically calculated from your bid block schedule.<br><br>
         Takes about 2 minutes to set up. You can always edit everything later in Settings.
@@ -1939,7 +1939,7 @@
         <div style="font-size:12px;color:#888880;margin-bottom:10px;">Share it with your crew — it's free for everyone.</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <div id="wiz-share-text" style="flex:1;font-size:11px;color:#666660;background:#fff;border:0.5px solid #d8d8d0;border-radius:7px;padding:7px 10px;line-height:1.5;">
-            Hey, this app estimates your Southwest paycheck — check it out: https://vonhogler.github.io/shift-pay-tracker/
+            Hey, ShiftComp estimates your Southwest paycheck before it hits your account — check it out: https://vonhogler.github.io/shift-pay-tracker/
           </div>
           <button onclick="wizCopyShare()" style="font-size:12px;font-weight:600;font-family:inherit;background:#1a1a18;color:#fff;border:none;border-radius:7px;padding:8px 12px;cursor:pointer;white-space:nowrap;" id="wiz-copy-btn">
             Copy
@@ -2315,7 +2315,7 @@ function saveRecords() {
 
   const today   = new Date();
   const dateStr = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
-  const filename = 'shiftpay-backup-' + dateStr + '.json';
+  const filename = 'shiftcomp-backup-' + dateStr + '.json';
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -3337,7 +3337,7 @@ function wizSaveAndFinish() {
 }
 
 function wizCopyShare() {
-  const text = "Hey, this app estimates your Southwest paycheck — check it out: https://vonhogler.github.io/shift-pay-tracker/";
+  const text = "Hey, ShiftComp estimates your Southwest paycheck before it hits your account — check it out: https://vonhogler.github.io/shift-pay-tracker/";
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('wiz-copy-btn');
     if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
