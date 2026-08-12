@@ -6,6 +6,7 @@ const ASSETS = [
   '/shift-pay-tracker/manifest.json',
   '/shift-pay-tracker/icons/icon-192.png',
   '/shift-pay-tracker/icons/icon-512.png',
+  '/shift-pay-tracker/shiftcomp-wordmark.svg',
 ];
 
 self.addEventListener('install', event => {
