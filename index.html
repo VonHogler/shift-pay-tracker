@@ -138,7 +138,7 @@
 
   /* ── Week view rows ── */
   .week-view  { display:flex; flex-direction:column; gap:4px; }
-  .week-row   { display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:8px;
+  .week-row   { display:flex; align-items:flex-start; gap:8px; padding:9px 10px; border-radius:8px;
                 border:0.5px solid transparent; background:#fafafa; cursor:pointer; }
   .week-row.worked { background:#E1F5EE; color:#085041; border-color:#5DCAA5; }
   .week-row.ot     { background:#FAEEDA; color:#633806; border-color:#EF9F27; }
@@ -147,10 +147,19 @@
   .week-row.pickup { background:#E6F1FB; color:#042C53; border-color:#85B7EB; }
   .week-row.off    { background:transparent; color:#aaa; }
   .week-row.today  { box-shadow:0 0 0 2px #1a1a18 inset; font-weight:600; }
-  .week-row-day    { font-size:12px; font-weight:500; min-width:44px; flex-shrink:0; }
-  .week-row-info   { flex:1; font-size:12px; }
-  .week-row-badge  { font-size:11px; padding:2px 6px; border-radius:4px;
-                     background:rgba(0,0,0,0.08); white-space:nowrap; flex-shrink:0; }
+  .week-row-day    { font-size:12px; font-weight:500; min-width:44px; flex-shrink:0; padding-top:1px; }
+  .week-row-body   { flex:1; display:flex; flex-direction:column; gap:3px; }
+  .week-row-base   { font-size:12px; }
+  .week-row-extra  { font-size:11px; }
+  .week-row-extra-chip { display:inline-block; padding:1px 6px; border-radius:3px;
+                         font-size:11px; white-space:nowrap; }
+  .week-row-extra.ot-extra     .week-row-extra-chip { background:#FEF0D0; color:#633806; }
+  .week-row-extra.pickup-extra .week-row-extra-chip { background:#D8EAF8; color:#042C53; }
+  .week-row-extra.gave-extra   .week-row-extra-chip { background:#F5D9E8; color:#4B1528; }
+  .week-row-extra.lwop-extra   .week-row-extra-chip { background:#F5DDD6; color:#4A1B0C; }
+  .week-row-more   { font-size:11px; color:#888880; }
+  .week-row-expand { font-size:14px; color:#888880; cursor:pointer; padding:0 2px;
+                     align-self:center; flex-shrink:0; line-height:1; user-select:none; }
 
   /* ── Pay screen ── */
   .section-label {
@@ -2731,9 +2740,9 @@ function getWeekLabel() {
   const end = new Date(calWeekStart); end.setDate(calWeekStart.getDate() + 6);
   const s = MON_S[calWeekStart.getMonth()] + ' ' + calWeekStart.getDate();
   if (calWeekStart.getMonth() === end.getMonth()) {
-    return s + '–' + end.getDate() + ', ' + end.getFullYear();
+    return s + '–' + end.getDate();
   }
-  return s + ' – ' + MON_S[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear();
+  return s + ' – ' + MON_S[end.getMonth()] + ' ' + end.getDate();
 }
 
 function calNav(delta) {
@@ -2839,6 +2848,7 @@ function renderWeekView() {
   const today    = new Date();
   const todayStr = `${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
   const DOW_S    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MAX_VIS  = 2;
 
   for (let i = 0; i < 7; i++) {
     const day     = new Date(calWeekStart);
@@ -2854,51 +2864,94 @@ function renderWeekView() {
     const pickupHrs = override?.pickupHrs || 0;
     const isFullGave = override?.type === 'gave' && !otHrs && !dtHrs;
 
-    // Determine color type
+    // Row background type (priority order)
     let rowType = bid.isWorkday ? 'worked' : 'off';
-    if (pickupHrs > 0)                           rowType = 'pickup';
-    else if (isFullGave)                         rowType = 'gave';
-    else if (otHrs > 0 || dtHrs > 0)            rowType = 'ot';
-    else if (lwopHrs > 0 || gaveHrs > 0)        rowType = 'early';
+    if (pickupHrs > 0)                    rowType = 'pickup';
+    else if (isFullGave)                  rowType = 'gave';
+    else if (otHrs > 0 || dtHrs > 0)     rowType = 'ot';
+    else if (lwopHrs > 0 || gaveHrs > 0) rowType = 'early';
 
-    // Info text and badge
-    let infoText  = 'Day off';
-    let badgeText = '';
-
-    if (bid.isWorkday && bid.startTime) {
-      const endTime  = addMinutes(bid.startTime, 8.5 * 60);
-      const schedule = fmtTime(bid.startTime) + '–' + fmtTime(endTime);
-      const paidBase = Math.max(0, PAID_HRS - lwopHrs - gaveHrs);
-
-      if (rowType === 'gave')   { infoText = 'Gave shift away'; }
-      else if (rowType === 'early')  { infoText = paidBase.toFixed(1) + ' hrs · ' + schedule; }
-      else if (rowType === 'pickup') {
-        infoText  = PAID_HRS.toFixed(1) + ' hrs · ' + schedule;
-        badgeText = '+' + pickupHrs.toFixed(1) + ' picked up';
-      } else if (rowType === 'ot') {
-        infoText = PAID_HRS.toFixed(1) + ' hrs · ' + schedule;
-        if (otHrs > 0) badgeText += '+' + otHrs.toFixed(1) + ' OT';
-        if (dtHrs > 0) badgeText += (badgeText ? ' · ' : '') + '+' + dtHrs.toFixed(1) + ' DT';
-      } else {
-        infoText = PAID_HRS.toFixed(1) + ' hrs · ' + schedule;
-      }
-    } else {
-      // Not a scheduled workday
-      if (rowType === 'pickup') { infoText = '+' + pickupHrs.toFixed(1) + ' hrs picked up'; }
-      else if (rowType === 'ot') {
-        if (otHrs > 0) badgeText += '+' + otHrs.toFixed(1) + ' OT';
-        if (dtHrs > 0) badgeText += (badgeText ? ' · ' : '') + '+' + dtHrs.toFixed(1) + ' DT';
-        infoText = '—';
-      }
+    // Base line text
+    let baseText = 'Day off';
+    if (isFullGave) {
+      baseText = 'Gave shift away';
+    } else if (bid.isWorkday && bid.startTime) {
+      const endTime = addMinutes(bid.startTime, 8.5 * 60);
+      baseText = PAID_HRS.toFixed(1) + ' hrs · ' + fmtTime(bid.startTime) + '–' + fmtTime(endTime);
+    } else if (pickupHrs > 0) {
+      baseText = '+' + pickupHrs.toFixed(1) + ' hrs picked up';
     }
 
-    const row  = document.createElement('div');
-    const isToday = dateStr === todayStr;
+    // Extra chips — each non-zero exception field
+    const extras = [];
+    if (otHrs     > 0) extras.push({ cls: 'ot-extra',     text: '+' + otHrs.toFixed(1) + ' OT' });
+    if (dtHrs     > 0) extras.push({ cls: 'ot-extra',     text: '+' + dtHrs.toFixed(1) + ' DT' });
+    if (pickupHrs > 0 && bid.isWorkday)
+                       extras.push({ cls: 'pickup-extra', text: '+' + pickupHrs.toFixed(1) + ' picked up' });
+    if (gaveHrs   > 0) extras.push({ cls: 'gave-extra',   text: '−' + gaveHrs.toFixed(1) + ' gave' });
+    if (lwopHrs   > 0) extras.push({ cls: 'lwop-extra',   text: '−' + lwopHrs.toFixed(1) + ' LWOP' });
+
+    const overflow = Math.max(0, extras.length - MAX_VIS);
+    const isToday  = dateStr === todayStr;
+
+    // Build DOM
+    const row = document.createElement('div');
     row.className = 'week-row ' + rowType + (isToday ? ' today' : '');
-    row.innerHTML =
-      `<div class="week-row-day">${DOW_S[day.getDay()]} ${day.getDate()}</div>` +
-      `<div class="week-row-info">${infoText}</div>` +
-      (badgeText ? `<div class="week-row-badge">${badgeText}</div>` : '');
+
+    const dayEl = document.createElement('div');
+    dayEl.className = 'week-row-day';
+    dayEl.textContent = DOW_S[day.getDay()] + ' ' + day.getDate();
+
+    const body = document.createElement('div');
+    body.className = 'week-row-body';
+
+    const baseEl = document.createElement('div');
+    baseEl.className = 'week-row-base';
+    baseEl.textContent = baseText;
+    body.appendChild(baseEl);
+
+    // Extra chip elements
+    const extraEls = extras.map((ex, idx) => {
+      const el = document.createElement('div');
+      el.className = 'week-row-extra ' + ex.cls;
+      if (idx >= MAX_VIS) el.style.display = 'none';
+      const chip = document.createElement('span');
+      chip.className = 'week-row-extra-chip';
+      chip.textContent = ex.text;
+      el.appendChild(chip);
+      body.appendChild(el);
+      return el;
+    });
+
+    // "+N more" label
+    let moreEl = null;
+    if (overflow > 0) {
+      moreEl = document.createElement('div');
+      moreEl.className = 'week-row-more';
+      moreEl.textContent = '+' + overflow + ' more';
+      body.appendChild(moreEl);
+    }
+
+    row.appendChild(dayEl);
+    row.appendChild(body);
+
+    // Expand/collapse arrow (only when there is overflow)
+    if (overflow > 0) {
+      const expandEl = document.createElement('span');
+      expandEl.className = 'week-row-expand';
+      expandEl.textContent = '›'; // ›
+      expandEl.addEventListener('click', e => {
+        e.stopPropagation();
+        const expanded = row.classList.toggle('week-row-expanded');
+        extraEls.forEach((el, idx) => {
+          if (idx >= MAX_VIS) el.style.display = expanded ? '' : 'none';
+        });
+        if (moreEl) moreEl.style.display = expanded ? 'none' : '';
+        expandEl.textContent = expanded ? '‹' : '›'; // ‹ or ›
+      });
+      row.appendChild(expandEl);
+    }
+
     row.addEventListener('click', () => showDayDetail(dateStr));
     weekView.appendChild(row);
   }
