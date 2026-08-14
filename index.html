@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a18">
-<title>ShiftComp</title>
+<title>Shift Pay Tracker</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
@@ -35,7 +35,7 @@
     padding-bottom: 0.75rem;
     border-bottom: 0.5px solid #e8e8e0;
   }
-  .nav-logo { height: 26px; width: auto; flex-shrink: 0; display: block; }
+  .nav-title { font-size: 17px; font-weight: 600; color: #1a1a18; }
   .nav-tabs {
     display: flex;
     gap: 3px;
@@ -575,6 +575,51 @@
   }
   .entry-clear-btn:active { opacity: 0.7; }
 
+  /* ── Block entry (shift time / add another) ── */
+  .block-primary-row { display:flex; align-items:center; gap:6px; }
+  .block-time-link {
+    font-size:11px; font-family:inherit; color:#888880; background:none;
+    border:none; cursor:pointer; padding:0; white-space:nowrap;
+    text-decoration:underline; text-underline-offset:2px; flex-shrink:0;
+  }
+  .block-time-row { display:flex; align-items:center; gap:5px; padding:4px 0; flex-wrap:wrap; }
+  .block-time-sel {
+    font-size:12px; font-family:inherit; color:#1a1a18; background:#f5f5f0;
+    border:0.5px solid #d8d8d0; border-radius:7px; padding:5px 4px;
+    cursor:pointer; flex-shrink:0;
+  }
+  .block-time-sep { font-size:12px; color:#aaa; flex-shrink:0; }
+  .block-time-result { font-size:12px; color:#085041; font-weight:500; min-width:44px; flex-shrink:0; }
+  .block-time-back {
+    font-size:11px; font-family:inherit; color:#888880; background:none;
+    border:none; cursor:pointer; padding:0;
+    text-decoration:underline; text-underline-offset:2px; flex-shrink:0;
+  }
+  .block-add-btn {
+    font-size:12px; font-family:inherit; color:#888880; background:none;
+    border:0.5px solid #d8d8d0; border-radius:7px; padding:5px 10px;
+    cursor:pointer; width:100%; text-align:left; margin-top:4px;
+  }
+  .extra-block {
+    display:flex; align-items:flex-start; gap:6px;
+    padding-top:6px; margin-top:4px; border-top:0.5px solid #f0f0e8;
+  }
+  .extra-block-body { flex:1; }
+  .extra-row { display:flex; align-items:center; gap:6px; }
+  .extra-hrs-wrap {
+    display:flex; align-items:center; background:#f5f5f0;
+    border:0.5px solid #d8d8d0; border-radius:8px; overflow:hidden;
+  }
+  .extra-hrs-input {
+    font-size:13px; font-family:inherit; color:#1a1a18; background:transparent;
+    border:none; padding:6px 4px 6px 10px; width:52px; text-align:right;
+  }
+  .extra-hrs-input:focus { outline:none; }
+  .block-remove-btn {
+    font-size:15px; font-family:inherit; color:#ccc; background:none;
+    border:none; cursor:pointer; padding:0 2px; line-height:1; flex-shrink:0;
+  }
+
   /* ── Format toggle ── */
   .entry-format-row {
     display: flex;
@@ -828,19 +873,6 @@
     flex-shrink: 0;
   }
   .kofi-banner-dismiss:hover { color: #888; }
-
-  .backup-banner {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    background: #f5f5f0;
-    border: 0.5px solid #e0e0d8;
-    border-radius: 10px;
-    padding: 9px 12px;
-    margin-bottom: 1.25rem;
-  }
-  .backup-banner.show { display: flex; }
 
   /* ── Offline bar ── */
   .offline-bar {
@@ -1124,7 +1156,7 @@
 <div class="app">
 
   <div class="nav">
-    <img src="shiftcomp-wordmark.svg" alt="ShiftComp" class="nav-logo">
+    <span class="nav-title">Shift pay</span>
     <div class="nav-tabs">
       <button class="tab active" onclick="switchTab('calendar')">Calendar</button>
       <button class="tab" onclick="switchTab('pay')">Pay</button>
@@ -1170,16 +1202,6 @@
         <div class="legend-item"><div class="legend-dot" style="background:#D4537E;"></div>Gave away</div>
         <div class="legend-item"><div class="legend-dot" style="background:#378ADD;"></div>Picked up</div>
       </div>
-    </div>
-
-    <!-- Backup prompt banner -->
-    <div class="backup-banner" id="backup-banner">
-      <div class="kofi-banner-left">
-        <span style="font-size:16px;">📋</span>
-        <div class="kofi-banner-text"><strong>Your pay period just closed</strong> — save your records so you never lose your shift history.</div>
-      </div>
-      <button class="kofi-banner-link" onclick="saveAndDismissBanner()">Save now</button>
-      <button class="kofi-banner-dismiss" style="font-size:11px;color:#888880;" onclick="dismissBackupBanner()">Not now</button>
     </div>
 
     <!-- Ko-fi support banner -->
@@ -1446,10 +1468,6 @@
       </div>
     </div>
 
-    <div class="settings-save-row" style="margin-bottom: 8px;">
-      <button class="reset-btn" style="flex: 1;" onclick="restoreRecords()">Restore records</button>
-      <button class="save-btn" onclick="saveRecords()">Save your records</button>
-    </div>
     <div class="settings-save-row">
       <button class="reset-btn" onclick="resetSettings()">Reset</button>
       <button class="save-btn" onclick="saveSettings()">Save settings</button>
@@ -1461,7 +1479,7 @@
   <div id="screen-help" class="screen">
 
     <div class="help-intro">
-      Everything you need to set up and use ShiftComp — bookmark this tab for reference.
+      Everything you need to set up and use Shift Pay Tracker — bookmark this tab for reference.
     </div>
 
     <!-- Section: How the app works -->
@@ -1470,7 +1488,7 @@
         <span>📋 How this app works</span><span class="help-chevron" id="chev-how">›</span>
       </div>
       <div class="help-body" id="hbody-how">
-        <p>ShiftComp estimates your paycheck before it hits your account. Here's the flow:</p>
+        <p>Shift Pay Tracker estimates your paycheck before it hits your account. Here's the flow:</p>
         <div class="help-step"><span class="help-step-num">1</span><div><strong>You set up your bid block</strong> in Settings — your scheduled workdays and start times for the ~5-week period.</div></div>
         <div class="help-step"><span class="help-step-num">2</span><div><strong>The calendar fills in automatically.</strong> Any day in your bid block schedule shows as a regular shift (green). Days off are blank.</div></div>
         <div class="help-step"><span class="help-step-num">3</span><div><strong>You log exceptions by tapping a day</strong> — overtime, double time, left early, gave a shift, or picked one up. Only log what's different from your normal schedule.</div></div>
@@ -1581,10 +1599,6 @@
         <span>🔄 If you lose your data</span><span class="help-chevron" id="chev-recovery">›</span>
       </div>
       <div class="help-body" id="hbody-recovery">
-        <div class="help-subsection">How to protect your records</div>
-        <div class="help-step"><span class="help-step-num">1</span><div><strong>Go to Settings and tap "Save your records"</strong> — this saves a backup file to your Downloads folder.</div></div>
-        <div class="help-step"><span class="help-step-num">2</span><div><strong>If you ever lose your data, tap "Restore records" in Settings</strong> — select your backup file and everything comes back instantly.</div></div>
-
         <div class="help-note" style="margin-bottom:12px;">⚠️ This app stores all data on your device — there's no cloud backup. In certain situations, that data can be lost.</div>
 
         <div class="help-subsection">Why data gets wiped</div>
@@ -1651,16 +1665,13 @@
     <!-- Step 1: Welcome -->
     <div class="wizard-step active" id="wstep-1">
       <div class="wizard-icon">✈️</div>
-      <div class="wizard-title">ShiftComp</div>
+      <div class="wizard-title">Shift Pay Tracker</div>
       <div class="wizard-desc">
         Estimate your paycheck before it hits your account. Tracks regular shifts, overtime, and double time — automatically calculated from your bid block schedule.<br><br>
         Takes about 2 minutes to set up. You can always edit everything later in Settings.
       </div>
-      <div class="wizard-nav" style="flex-direction: column;">
+      <div class="wizard-nav">
         <button class="wizard-next-btn" onclick="wizNext()">Get started →</button>
-        <div style="text-align: center;">
-          <button class="wizard-skip-btn" onclick="restoreRecords(wizHide)">Already have a backup? Restore your records</button>
-        </div>
       </div>
     </div>
 
@@ -1939,7 +1950,7 @@
         <div style="font-size:12px;color:#888880;margin-bottom:10px;">Share it with your crew — it's free for everyone.</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <div id="wiz-share-text" style="flex:1;font-size:11px;color:#666660;background:#fff;border:0.5px solid #d8d8d0;border-radius:7px;padding:7px 10px;line-height:1.5;">
-            Hey, ShiftComp estimates your Southwest paycheck before it hits your account — check it out: https://vonhogler.github.io/shift-pay-tracker/
+            Hey, this app estimates your Southwest paycheck — check it out: https://vonhogler.github.io/shift-pay-tracker/
           </div>
           <button onclick="wizCopyShare()" style="font-size:12px;font-weight:600;font-family:inherit;background:#1a1a18;color:#fff;border:none;border-radius:7px;padding:8px 12px;cursor:pointer;white-space:nowrap;" id="wiz-copy-btn">
             Copy
@@ -1985,46 +1996,106 @@
     <div id="ds-ot-fields">
       <div class="entry-field-row">
         <label class="entry-label">OT hrs <span class="entry-label-sub">added at 1.5×</span></label>
-        <div class="entry-input-wrap">
-          <input type="number" id="ds-ot" min="0" step="0.5" placeholder="0">
-          <span class="entry-unit">hrs</span>
+        <div class="block-primary-row">
+          <div class="entry-input-wrap">
+            <input type="number" id="ds-ot" min="0" step="0.5" placeholder="0">
+            <span class="entry-unit">hrs</span>
+          </div>
+          <button class="block-time-link" onclick="switchBlockToTime('ot')">Enter as shift time</button>
+        </div>
+        <div class="block-time-row" id="ds-ot-time-row" style="display:none">
+          <select class="block-time-sel" id="ds-ot-start" onchange="syncBlockTime('ot')"></select>
+          <span class="block-time-sep">→</span>
+          <select class="block-time-sel" id="ds-ot-end" onchange="syncBlockTime('ot')"></select>
+          <span class="block-time-result" id="ds-ot-result">—</span>
+          <button class="block-time-back" onclick="switchBlockToHours('ot')">use hrs</button>
         </div>
       </div>
+      <div id="ds-ot-extras"></div>
+      <button class="block-add-btn" id="ds-ot-add" onclick="addBlock('ot')" style="display:none">+ Add another OT block</button>
       <div class="entry-field-row">
         <label class="entry-label">DT hrs <span class="entry-label-sub">added at 2×</span></label>
-        <div class="entry-input-wrap">
-          <input type="number" id="ds-dt" min="0" step="0.5" placeholder="0">
-          <span class="entry-unit">hrs</span>
+        <div class="block-primary-row">
+          <div class="entry-input-wrap">
+            <input type="number" id="ds-dt" min="0" step="0.5" placeholder="0">
+            <span class="entry-unit">hrs</span>
+          </div>
+          <button class="block-time-link" onclick="switchBlockToTime('dt')">Enter as shift time</button>
+        </div>
+        <div class="block-time-row" id="ds-dt-time-row" style="display:none">
+          <select class="block-time-sel" id="ds-dt-start" onchange="syncBlockTime('dt')"></select>
+          <span class="block-time-sep">→</span>
+          <select class="block-time-sel" id="ds-dt-end" onchange="syncBlockTime('dt')"></select>
+          <span class="block-time-result" id="ds-dt-result">—</span>
+          <button class="block-time-back" onclick="switchBlockToHours('dt')">use hrs</button>
         </div>
       </div>
+      <div id="ds-dt-extras"></div>
+      <button class="block-add-btn" id="ds-dt-add" onclick="addBlock('dt')" style="display:none">+ Add another DT block</button>
     </div>
 
     <!-- LWOP / Gave — workday only -->
     <div id="ds-worked-fields">
       <div class="entry-field-row">
         <label class="entry-label">Left early <span class="entry-label-sub">LWOP, unpaid</span></label>
-        <div class="entry-input-wrap">
-          <input type="number" id="ds-lwop" min="0" step="0.5" placeholder="0">
-          <span class="entry-unit">hrs</span>
+        <div class="block-primary-row">
+          <div class="entry-input-wrap">
+            <input type="number" id="ds-lwop" min="0" step="0.5" placeholder="0">
+            <span class="entry-unit">hrs</span>
+          </div>
+          <button class="block-time-link" onclick="switchBlockToTime('lwop')">Enter as shift time</button>
+        </div>
+        <div class="block-time-row" id="ds-lwop-time-row" style="display:none">
+          <select class="block-time-sel" id="ds-lwop-start" onchange="syncBlockTime('lwop')"></select>
+          <span class="block-time-sep">→</span>
+          <select class="block-time-sel" id="ds-lwop-end" onchange="syncBlockTime('lwop')"></select>
+          <span class="block-time-result" id="ds-lwop-result">—</span>
+          <button class="block-time-back" onclick="switchBlockToHours('lwop')">use hrs</button>
         </div>
       </div>
+      <div id="ds-lwop-extras"></div>
+      <button class="block-add-btn" id="ds-lwop-add" onclick="addBlock('lwop')" style="display:none">+ Add another left-early block</button>
       <div class="entry-field-row">
         <label class="entry-label">Gave away <span class="entry-label-sub">hours forfeited</span></label>
-        <div class="entry-input-wrap">
-          <input type="number" id="ds-gave" min="0" step="0.5" placeholder="0">
-          <span class="entry-unit">hrs</span>
+        <div class="block-primary-row">
+          <div class="entry-input-wrap">
+            <input type="number" id="ds-gave" min="0" step="0.5" placeholder="0">
+            <span class="entry-unit">hrs</span>
+          </div>
+          <button class="block-time-link" onclick="switchBlockToTime('gave')">Enter as shift time</button>
+        </div>
+        <div class="block-time-row" id="ds-gave-time-row" style="display:none">
+          <select class="block-time-sel" id="ds-gave-start" onchange="syncBlockTime('gave')"></select>
+          <span class="block-time-sep">→</span>
+          <select class="block-time-sel" id="ds-gave-end" onchange="syncBlockTime('gave')"></select>
+          <span class="block-time-result" id="ds-gave-result">—</span>
+          <button class="block-time-back" onclick="switchBlockToHours('gave')">use hrs</button>
         </div>
       </div>
+      <div id="ds-gave-extras"></div>
+      <button class="block-add-btn" id="ds-gave-add" onclick="addBlock('gave')" style="display:none">+ Add another gave-away block</button>
     </div>
 
     <!-- Pickup field — shown for off days; also shown for worked days -->
     <div class="entry-field-row" id="ds-pickup-field">
       <label class="entry-label">Picked up <span class="entry-label-sub">regular rate</span></label>
-      <div class="entry-input-wrap">
-        <input type="number" id="ds-pickup" min="0" step="0.5" placeholder="0">
-        <span class="entry-unit">hrs</span>
+      <div class="block-primary-row">
+        <div class="entry-input-wrap">
+          <input type="number" id="ds-pickup" min="0" step="0.5" placeholder="0">
+          <span class="entry-unit">hrs</span>
+        </div>
+        <button class="block-time-link" onclick="switchBlockToTime('pickup')">Enter as shift time</button>
+      </div>
+      <div class="block-time-row" id="ds-pickup-time-row" style="display:none">
+        <select class="block-time-sel" id="ds-pickup-start" onchange="syncBlockTime('pickup')"></select>
+        <span class="block-time-sep">→</span>
+        <select class="block-time-sel" id="ds-pickup-end" onchange="syncBlockTime('pickup')"></select>
+        <span class="block-time-result" id="ds-pickup-result">—</span>
+        <button class="block-time-back" onclick="switchBlockToHours('pickup')">use hrs</button>
       </div>
     </div>
+    <div id="ds-pickup-extras"></div>
+    <button class="block-add-btn" id="ds-pickup-add" onclick="addBlock('pickup')" style="display:none">+ Add another pickup block</button>
 
     <div class="entry-actions">
       <button class="entry-clear-btn" id="ds-clear-btn" onclick="clearDayEntry()">Clear override</button>
@@ -2303,91 +2374,6 @@ function resetSettings() {
   showToast('Settings cleared');
   renderCalendar();
   updateMetrics();
-}
-
-// ── BACKUP / RESTORE ──────────────────────────────────────────────
-function saveRecords() {
-  const backup = {};
-  const raw_settings = localStorage.getItem('shiftpay-settings');
-  const raw_shifts   = localStorage.getItem('shiftpay-shifts');
-  if (raw_settings) backup['shiftpay-settings'] = JSON.parse(raw_settings);
-  if (raw_shifts)   backup['shiftpay-shifts']   = JSON.parse(raw_shifts);
-
-  const today   = new Date();
-  const dateStr = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
-  const filename = 'shiftcomp-backup-' + dateStr + '.json';
-
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  showToast('Records saved ✓ — find the file in your Downloads folder.');
-}
-
-function restoreRecords(afterRestore) {
-  const input    = document.createElement('input');
-  input.type     = 'file';
-  input.accept   = '.json';
-  input.onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (!data['shiftpay-settings'] && !data['shiftpay-shifts']) {
-          showToast("That file doesn't look right — please select a ShiftPay backup file.");
-          return;
-        }
-        if (data['shiftpay-settings']) {
-          localStorage.setItem('shiftpay-settings', JSON.stringify(data['shiftpay-settings']));
-        }
-        if (data['shiftpay-shifts']) {
-          localStorage.setItem('shiftpay-shifts', JSON.stringify(data['shiftpay-shifts']));
-        }
-        loadShiftData();
-        loadSettings();
-        renderCalendar();
-        updateMetrics();
-        if (typeof afterRestore === 'function') afterRestore();
-        showToast('Records restored ✓');
-      } catch (err) {
-        showToast("That file doesn't look right — please select a ShiftPay backup file.");
-      }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-}
-
-function checkBackupPrompt() {
-  const today = new Date();
-  const dom   = today.getDate();
-  if (dom !== 1 && dom !== 16) return;
-  const ym         = today.getFullYear() + '-' + pad2(today.getMonth() + 1);
-  const lastPrompt = localStorage.getItem('shiftpay-last-backup-prompt');
-  if (lastPrompt === ym) return;
-  const banner = document.getElementById('backup-banner');
-  if (banner) banner.classList.add('show');
-}
-
-function dismissBackupBanner() {
-  const today = new Date();
-  const ym    = today.getFullYear() + '-' + pad2(today.getMonth() + 1);
-  localStorage.setItem('shiftpay-last-backup-prompt', ym);
-  const banner = document.getElementById('backup-banner');
-  if (banner) banner.classList.remove('show');
-}
-
-function saveAndDismissBanner() {
-  saveRecords();
-  dismissBackupBanner();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2907,6 +2893,303 @@ function autoColonFormat(el) {
 // ═══════════════════════════════════════════════════════════════
 // ENTRY FORMAT TOGGLE — decimal or H:MM
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// BLOCK / SHIFT-TIME ENTRY
+// ═══════════════════════════════════════════════════════════════
+
+// Build 96 time options (00:00–23:45, 15-min increments), displayed as 12h
+const BLOCK_TIME_OPTS = (() => {
+  const opts = [];
+  for (let m = 0; m < 24 * 60; m += 15) {
+    const hh  = Math.floor(m / 60);
+    const mm  = m % 60;
+    const h12 = hh % 12 || 12;
+    const ampm = hh < 12 ? 'am' : 'pm';
+    const val  = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    const lbl  = h12 + ':' + String(mm).padStart(2,'0') + ' ' + ampm;
+    opts.push({ val, lbl });
+  }
+  return opts;
+})();
+
+// Compute hours from two "HH:MM" select values; handles overnight
+function hrsFromTimeSel(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let startMin = sh * 60 + sm;
+  let endMin   = eh * 60 + em;
+  if (endMin <= startMin) endMin += 24 * 60; // overnight
+  return (endMin - startMin) / 60;
+}
+
+// Format decimal hours for block-time-result display
+function fmtBlockHrs(hrs) {
+  if (!hrs) return '—';
+  const h = Math.floor(hrs);
+  const m = Math.round((hrs - h) * 60);
+  return m ? h + 'h ' + m + 'm' : h + 'h';
+}
+
+// Lazy-build the start/end <select> elements for a primary block type
+function ensureBlockSelects(type) {
+  const startSel = document.getElementById('ds-' + type + '-start');
+  const endSel   = document.getElementById('ds-' + type + '-end');
+  if (!startSel || startSel.options.length > 0) return;
+  BLOCK_TIME_OPTS.forEach(o => {
+    const os = document.createElement('option');
+    os.value = o.val; os.textContent = o.lbl;
+    startSel.appendChild(os);
+    const oe = document.createElement('option');
+    oe.value = o.val; oe.textContent = o.lbl;
+    endSel.appendChild(oe);
+  });
+  // Default: 06:00 → 14:00
+  startSel.value = '06:00';
+  endSel.value   = '14:00';
+}
+
+// Switch primary field to time-entry mode
+function switchBlockToTime(type) {
+  ensureBlockSelects(type);
+  const timeRow = document.getElementById('ds-' + type + '-time-row');
+  const hrs = readEntryDecimal('ds-' + type);
+  if (timeRow) timeRow.style.display = 'flex';
+  // Show add-another once in time mode
+  const addBtn = document.getElementById('ds-' + type + '-add');
+  if (addBtn) addBtn.style.display = 'block';
+  syncBlockTime(type);
+}
+
+// Switch primary field back to hours mode
+function switchBlockToHours(type) {
+  const timeRow = document.getElementById('ds-' + type + '-time-row');
+  if (timeRow) timeRow.style.display = 'none';
+  // Also show add-btn in hrs mode so user can add more blocks
+  const addBtn = document.getElementById('ds-' + type + '-add');
+  if (addBtn) addBtn.style.display = 'block';
+}
+
+// Recompute hours from selects and push into the primary #ds-{type} input
+function syncBlockTime(type) {
+  const startSel = document.getElementById('ds-' + type + '-start');
+  const endSel   = document.getElementById('ds-' + type + '-end');
+  const result   = document.getElementById('ds-' + type + '-result');
+  if (!startSel || !endSel) return;
+  const hrs = hrsFromTimeSel(startSel.value, endSel.value);
+  const input = document.getElementById('ds-' + type);
+  if (input) input.value = hrs ? hrs.toFixed(2).replace(/\.?0+$/, '') : '';
+  if (result) result.textContent = fmtBlockHrs(hrs);
+}
+
+// Add an extra block entry row for the given type
+function addBlock(type) {
+  const container = document.getElementById('ds-' + type + '-extras');
+  if (!container) return;
+  const idx = container.children.length;
+  const uid = type + '-extra-' + idx;
+  const labelMap = { ot:'OT', dt:'DT', lwop:'Left early', gave:'Gave away', pickup:'Pickup' };
+  const lbl = labelMap[type] || type;
+
+  const div = document.createElement('div');
+  div.className = 'extra-block';
+  div.dataset.type = type;
+
+  // Build time options HTML
+  const optsHtml = BLOCK_TIME_OPTS.map(o =>
+    '<option value="' + o.val + '">' + o.lbl + '</option>'
+  ).join('');
+
+  div.innerHTML = '<button class="block-remove-btn" onclick="removeBlock(this)" title="Remove">×</button>' +
+    '<div class="extra-block-body">' +
+      '<div class="extra-row" id="' + uid + '-hrs-row">' +
+        '<div class="extra-hrs-wrap">' +
+          '<input type="number" class="extra-hrs-input" id="' + uid + '-hrs" min="0" step="0.5" placeholder="0">' +
+          '<span class="entry-unit" style="font-size:12px;padding-right:8px;color:#888">hrs</span>' +
+        '</div>' +
+        '<button class="block-time-link" onclick="switchExtraToTime(this)" data-uid="' + uid + '">Enter as shift time</button>' +
+      '</div>' +
+      '<div class="block-time-row" id="' + uid + '-time-row" style="display:none">' +
+        '<select class="block-time-sel" id="' + uid + '-start" onchange="syncExtraTime(this)">' + optsHtml + '</select>' +
+        '<span class="block-time-sep">→</span>' +
+        '<select class="block-time-sel" id="' + uid + '-end" onchange="syncExtraTime(this)">' + optsHtml + '</select>' +
+        '<span class="block-time-result" id="' + uid + '-result">—</span>' +
+        '<button class="block-time-back" onclick="switchExtraToHours(this)" data-uid="' + uid + '">use hrs</button>' +
+      '</div>' +
+    '</div>';
+
+  // Set defaults
+  const startSel = div.querySelector('#' + uid + '-start');
+  const endSel   = div.querySelector('#' + uid + '-end');
+  if (startSel) startSel.value = '06:00';
+  if (endSel)   endSel.value   = '14:00';
+
+  container.appendChild(div);
+}
+
+function removeBlock(btn) {
+  btn.closest('.extra-block').remove();
+}
+
+function switchExtraToTime(btn) {
+  const uid = btn.dataset.uid;
+  document.getElementById(uid + '-hrs-row').querySelector('.block-time-link').style.display = 'none';
+  document.getElementById(uid + '-time-row').style.display = 'flex';
+  // compute from selects
+  const s = document.getElementById(uid + '-start');
+  const e = document.getElementById(uid + '-end');
+  if (s && e) {
+    const hrs = hrsFromTimeSel(s.value, e.value);
+    const hrsInput = document.getElementById(uid + '-hrs');
+    if (hrsInput) hrsInput.value = hrs ? hrs.toFixed(2).replace(/\.?0+$/, '') : '';
+    const result = document.getElementById(uid + '-result');
+    if (result) result.textContent = fmtBlockHrs(hrs);
+  }
+}
+
+function switchExtraToHours(btn) {
+  const uid = btn.dataset.uid;
+  document.getElementById(uid + '-time-row').style.display = 'none';
+  document.getElementById(uid + '-hrs-row').querySelector('.block-time-link').style.display = '';
+}
+
+function syncExtraTime(sel) {
+  const timeRow = sel.closest('.block-time-row');
+  const uid = timeRow.id.replace('-time-row','');
+  const startSel = document.getElementById(uid + '-start');
+  const endSel   = document.getElementById(uid + '-end');
+  const hrs = hrsFromTimeSel(startSel?.value, endSel?.value);
+  const hrsInput = document.getElementById(uid + '-hrs');
+  if (hrsInput) hrsInput.value = hrs ? hrs.toFixed(2).replace(/\.?0+$/, '') : '';
+  const result = document.getElementById(uid + '-result');
+  if (result) result.textContent = fmtBlockHrs(hrs);
+}
+
+// Reset all block-entry UI to defaults (no time rows, no extras, hide add btns)
+function clearBlockState() {
+  const BLOCK_TYPES = ['ot','dt','lwop','gave','pickup'];
+  BLOCK_TYPES.forEach(type => {
+    const timeRow = document.getElementById('ds-' + type + '-time-row');
+    if (timeRow) timeRow.style.display = 'none';
+    const extras = document.getElementById('ds-' + type + '-extras');
+    if (extras) extras.innerHTML = '';
+    const addBtn = document.getElementById('ds-' + type + '-add');
+    if (addBtn) addBtn.style.display = 'none';
+    // Reset primary selects
+    const startSel = document.getElementById('ds-' + type + '-start');
+    const endSel   = document.getElementById('ds-' + type + '-end');
+    const result   = document.getElementById('ds-' + type + '-result');
+    if (startSel) { startSel.innerHTML = ''; } // will rebuild lazily
+    if (endSel)   { endSel.innerHTML = ''; }
+    if (result)   { result.textContent = '—'; }
+  });
+}
+
+// Rebuild block UI from a saved override's `blocks` array
+function restoreBlocksFromOverride(override) {
+  if (!override || !Array.isArray(override.blocks) || override.blocks.length === 0) return;
+  const BLOCK_TYPES = ['ot','dt','lwop','gave','pickup'];
+  // Group blocks by type
+  const byType = {};
+  BLOCK_TYPES.forEach(t => { byType[t] = []; });
+  override.blocks.forEach(b => {
+    const t = b.type === 'early' ? 'lwop' : b.type;
+    if (byType[t]) byType[t].push(b);
+  });
+  BLOCK_TYPES.forEach(type => {
+    const blocks = byType[type];
+    if (!blocks.length) return;
+    const first = blocks[0];
+    // If first block has start/end, switch primary to time mode
+    if (first.start && first.end) {
+      ensureBlockSelects(type);
+      const startSel = document.getElementById('ds-' + type + '-start');
+      const endSel   = document.getElementById('ds-' + type + '-end');
+      if (startSel) startSel.value = first.start;
+      if (endSel)   endSel.value   = first.end;
+      switchBlockToTime(type);
+    } else {
+      // Just show the add-another button so user can add more if desired
+      const addBtn = document.getElementById('ds-' + type + '-add');
+      if (addBtn) addBtn.style.display = 'block';
+    }
+    // Restore extra blocks (index 1+)
+    blocks.slice(1).forEach(b => {
+      addBlock(type);
+      const container = document.getElementById('ds-' + type + '-extras');
+      if (!container) return;
+      const lastExtra = container.lastElementChild;
+      if (!lastExtra) return;
+      const idx = container.children.length - 1;
+      const uid = type + '-extra-' + idx;
+      if (b.start && b.end) {
+        const startSel = document.getElementById(uid + '-start');
+        const endSel   = document.getElementById(uid + '-end');
+        if (startSel) startSel.value = b.start;
+        if (endSel)   endSel.value   = b.end;
+        // switch to time mode
+        const fakeBtn = { dataset: { uid }, closest: () => null };
+        const timeRow = document.getElementById(uid + '-time-row');
+        if (timeRow) timeRow.style.display = 'flex';
+        const link = document.getElementById(uid + '-hrs-row')?.querySelector('.block-time-link');
+        if (link) link.style.display = 'none';
+        syncExtraTime(document.getElementById(uid + '-start'));
+      } else if (b.hours) {
+        const hrsInput = document.getElementById(uid + '-hrs');
+        if (hrsInput) hrsInput.value = b.hours;
+      }
+    });
+  });
+}
+
+// Collect all blocks from DOM into an array; also compute per-type totals
+function collectBlocks(isWorkday) {
+  const BLOCK_TYPES = ['ot','dt','lwop','gave','pickup'];
+  const blocks = [];
+  const totals = { ot:0, dt:0, lwop:0, gave:0, pickup:0 };
+
+  BLOCK_TYPES.forEach(type => {
+    // Primary block
+    const hrs = readEntryDecimal('ds-' + type);
+    if (hrs > 0) {
+      const timeRow = document.getElementById('ds-' + type + '-time-row');
+      const inTimeMode = timeRow && timeRow.style.display !== 'none';
+      let start = null, end = null;
+      if (inTimeMode) {
+        start = document.getElementById('ds-' + type + '-start')?.value || null;
+        end   = document.getElementById('ds-' + type + '-end')?.value   || null;
+      }
+      const blockType = type === 'lwop' ? 'early' : type;
+      blocks.push({ type: blockType, hours: hrs, start, end });
+      totals[type] += hrs;
+    }
+    // Extra blocks
+    const extras = document.getElementById('ds-' + type + '-extras');
+    if (!extras) return;
+    Array.from(extras.querySelectorAll('.extra-block')).forEach((el, i) => {
+      const uid = type + '-extra-' + i;
+      const hrsInput = document.getElementById(uid + '-hrs');
+      const extraHrs = parseFloat(hrsInput?.value) || 0;
+      if (extraHrs <= 0) return;
+      const timeRow = document.getElementById(uid + '-time-row');
+      const inTimeMode = timeRow && timeRow.style.display !== 'none';
+      let start = null, end = null;
+      if (inTimeMode) {
+        start = document.getElementById(uid + '-start')?.value || null;
+        end   = document.getElementById(uid + '-end')?.value   || null;
+      }
+      const blockType = type === 'lwop' ? 'early' : type;
+      blocks.push({ type: blockType, hours: extraHrs, start, end });
+      totals[type] += extraHrs;
+    });
+  });
+
+  // LWOP and Gave are only meaningful on workdays
+  if (!isWorkday) { totals.lwop = 0; totals.gave = 0; }
+
+  return { blocks, totals };
+}
+
 let entryFormat = 'dec'; // 'dec' | 'hm'
 const ENTRY_IDS = ['ds-ot','ds-dt','ds-lwop','ds-gave','ds-pickup'];
 
@@ -2992,6 +3275,7 @@ function clearEntryInputs() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  clearBlockState();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3121,18 +3405,15 @@ function showDayDetail(dateStr) {
   // Clear button — only if there's an existing override
   document.getElementById('ds-clear-btn').style.display = isUserEntered ? 'inline-block' : 'none';
 
+  // Restore block detail UI if the override has saved blocks
+  restoreBlocksFromOverride(override);
+
   document.getElementById('day-sheet-backdrop').classList.add('open');
   document.getElementById('day-sheet').classList.add('open');
 }
 
 function saveDayEntry() {
   if (!currentDetailDate) return;
-
-  const otHrs     = readEntryDecimal('ds-ot');
-  const dtHrs     = readEntryDecimal('ds-dt');
-  const lwopHrs   = readEntryDecimal('ds-lwop');
-  const gaveHrs   = readEntryDecimal('ds-gave');
-  const pickupHrs = readEntryDecimal('ds-pickup');
 
   // Validate H:MM inputs if in that mode
   if (entryFormat === 'hm') {
@@ -3149,11 +3430,16 @@ function saveDayEntry() {
   const bid       = getBidForDate(currentDetailDate);
   const isWorkday = bid.isWorkday;
 
-  // LWOP and Gave fields are hidden on off days — force to 0 to be safe
-  const safeLwop = isWorkday ? lwopHrs : 0;
-  const safeGave = isWorkday ? gaveHrs : 0;
+  // Collect all blocks from DOM and compute per-type totals
+  const { blocks, totals } = collectBlocks(isWorkday);
 
-  const hasAnyEntry = otHrs || dtHrs || safeLwop || safeGave || pickupHrs;
+  const otHrs     = totals.ot;
+  const dtHrs     = totals.dt;
+  const lwopHrs   = totals.lwop;   // already zeroed for off-days by collectBlocks
+  const gaveHrs   = totals.gave;
+  const pickupHrs = totals.pickup;
+
+  const hasAnyEntry = otHrs || dtHrs || lwopHrs || gaveHrs || pickupHrs;
   if (!hasAnyEntry) {
     clearShiftEntry(currentDetailDate);
     closeDayDetail();
@@ -3163,14 +3449,17 @@ function saveDayEntry() {
     return;
   }
 
-  // Determine type for calendar color priority
+  // Determine calendar color type (priority order)
   let type = 'worked';
-  if (!isWorkday) type = 'pickup';  // base: off-day entry
-  if (pickupHrs > 0)                              type = 'pickup';
-  if (otHrs > 0 || dtHrs > 0)                    type = 'ot';
-  if (safeGave >= PAID_HRS && !pickupHrs && !otHrs && !dtHrs) type = 'gave';
+  if (!isWorkday)                                             type = 'pickup';
+  if (pickupHrs > 0)                                         type = 'pickup';
+  if (otHrs > 0 || dtHrs > 0)                               type = 'ot';
+  if (gaveHrs >= PAID_HRS && !pickupHrs && !otHrs && !dtHrs) type = 'gave';
 
-  const shiftObj = { type, otHrs, dtHrs, lwopHrs: safeLwop, gaveHrs: safeGave, pickupHrs };
+  const shiftObj = {
+    type, otHrs, dtHrs, lwopHrs, gaveHrs, pickupHrs,
+    blocks: blocks.length ? blocks : undefined,
+  };
   saveShiftEntry(currentDetailDate, shiftObj);
   closeDayDetail();
   renderCalendar();
@@ -3337,7 +3626,7 @@ function wizSaveAndFinish() {
 }
 
 function wizCopyShare() {
-  const text = "Hey, ShiftComp estimates your Southwest paycheck before it hits your account — check it out: https://vonhogler.github.io/shift-pay-tracker/";
+  const text = "Hey, this app estimates your Southwest paycheck — check it out: https://vonhogler.github.io/shift-pay-tracker/";
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('wiz-copy-btn');
     if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
@@ -3413,7 +3702,6 @@ function dismissInstall() {
   renderCalendar();
   updateMetrics();
   initKofiBanner();
-  checkBackupPrompt();
 
   // Show wizard if no settings have been saved yet
   const hasSettings = !!localStorage.getItem('shiftpay-settings');
