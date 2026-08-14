@@ -126,41 +126,6 @@
   .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #888880; }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-  /* ── Calendar view toggle & Today ── */
-  .cal-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-  .cal-nav-group  { display:flex; align-items:center; gap:4px; }
-  .cal-today-btn  { font-size:11px; font-family:inherit; padding:3px 7px; border-radius:6px;
-                    border:0.5px solid #d8d8d0; background:transparent; color:#888880; cursor:pointer; }
-  .cal-view-toggle { display:flex; background:#f0f0ea; border-radius:8px; padding:3px; gap:3px; }
-  .cal-view-btn   { font-size:11px; font-family:inherit; padding:4px 10px; border-radius:6px;
-                    border:none; background:transparent; color:#888880; cursor:pointer; white-space:nowrap; }
-  .cal-view-btn.active { background:#fff; color:#1a1a18; font-weight:500; }
-
-  /* ── Week view rows ── */
-  .week-view  { display:flex; flex-direction:column; gap:4px; }
-  .week-row   { display:flex; align-items:flex-start; gap:8px; padding:9px 10px; border-radius:8px;
-                border:0.5px solid transparent; background:#fafafa; cursor:pointer; }
-  .week-row.worked { background:#E1F5EE; color:#085041; border-color:#5DCAA5; }
-  .week-row.ot     { background:#FAEEDA; color:#633806; border-color:#EF9F27; }
-  .week-row.early  { background:#FAECE7; color:#4A1B0C; border-color:#F0997B; }
-  .week-row.gave   { background:#FBEAF0; color:#4B1528; border-color:#ED93B1; }
-  .week-row.pickup { background:#E6F1FB; color:#042C53; border-color:#85B7EB; }
-  .week-row.off    { background:transparent; color:#aaa; }
-  .week-row.today  { box-shadow:0 0 0 2px #1a1a18 inset; font-weight:600; }
-  .week-row-day    { font-size:12px; font-weight:500; min-width:44px; flex-shrink:0; padding-top:1px; }
-  .week-row-body   { flex:1; display:flex; flex-direction:column; gap:3px; }
-  .week-row-base   { font-size:12px; }
-  .week-row-extra  { font-size:11px; }
-  .week-row-extra-chip { display:inline-block; padding:1px 6px; border-radius:3px;
-                         font-size:11px; white-space:nowrap; }
-  .week-row-extra.ot-extra     .week-row-extra-chip { background:#FEF0D0; color:#633806; }
-  .week-row-extra.pickup-extra .week-row-extra-chip { background:#D8EAF8; color:#042C53; }
-  .week-row-extra.gave-extra   .week-row-extra-chip { background:#F5D9E8; color:#4B1528; }
-  .week-row-extra.lwop-extra   .week-row-extra-chip { background:#F5DDD6; color:#4A1B0C; }
-  .week-row-more   { font-size:11px; color:#888880; }
-  .week-row-expand { font-size:14px; color:#888880; cursor:pointer; padding:0 2px;
-                     align-self:center; flex-shrink:0; line-height:1; user-select:none; }
-
   /* ── Pay screen ── */
   .section-label {
     font-size: 11px;
@@ -1187,17 +1152,10 @@
 
     <!-- Calendar card -->
     <div class="card">
-      <div class="cal-header-row">
-        <div class="cal-nav-group">
-          <span class="cal-nav" onclick="calNav(-1)">&#8249;</span>
-          <span class="cal-month" id="cal-month-label">—</span>
-          <span class="cal-nav" onclick="calNav(1)">&#8250;</span>
-          <button class="cal-today-btn" onclick="calGoToday()">Today</button>
-        </div>
-        <div class="cal-view-toggle">
-          <button class="cal-view-btn" id="view-btn-month" onclick="setCalView('month')">Month</button>
-          <button class="cal-view-btn" id="view-btn-week"  onclick="setCalView('week')">Week</button>
-        </div>
+      <div class="cal-header">
+        <span class="cal-nav" onclick="changeMonth(-1)">&#8249;</span>
+        <span class="cal-month" id="cal-month-label">—</span>
+        <span class="cal-nav" onclick="changeMonth(1)">&#8250;</span>
       </div>
       <div class="cal-grid" id="cal-grid">
         <div class="cal-dow">Su</div><div class="cal-dow">Mo</div><div class="cal-dow">Tu</div>
@@ -1205,7 +1163,6 @@
         <div class="cal-dow">Sa</div>
         <!-- Days rendered by JS -->
       </div>
-      <div class="week-view" id="week-view"></div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#1D9E75;"></div>Regular</div>
         <div class="legend-item"><div class="legend-dot" style="background:#EF9F27;"></div>Overtime</div>
@@ -2135,10 +2092,6 @@ const DEFAULTS = {
 // ═══════════════════════════════════════════════════════════════
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-indexed
-let calView  = localStorage.getItem('shiftpay-calendar-view') || 'month';
-let calWeekStart = (function() {
-  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d;
-}());
 
 // shiftData: in-memory map of user-entered overrides { 'YYYY-MM-DD': shiftObj }
 // Loaded from localStorage 'shiftpay-shifts' on init and after any write.
@@ -2730,247 +2683,69 @@ function checkBidTransition() {
 // ═══════════════════════════════════════════════════════════════
 // CALENDAR RENDERER
 // ═══════════════════════════════════════════════════════════════
-// ── Calendar navigation helpers ─────────────────────────────
-function getWeekStart(date) {
-  const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d;
-}
-
-function getWeekLabel() {
-  const MON_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const end = new Date(calWeekStart); end.setDate(calWeekStart.getDate() + 6);
-  const s = MON_S[calWeekStart.getMonth()] + ' ' + calWeekStart.getDate();
-  if (calWeekStart.getMonth() === end.getMonth()) {
-    return s + '–' + end.getDate();
-  }
-  return s + ' – ' + MON_S[end.getMonth()] + ' ' + end.getDate();
-}
-
-function calNav(delta) {
-  if (calView === 'week') {
-    calWeekStart.setDate(calWeekStart.getDate() + delta * 7);
-    calYear  = calWeekStart.getFullYear();
-    calMonth = calWeekStart.getMonth();
-  } else {
-    calMonth += delta;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    if (calMonth < 0)  { calMonth = 11; calYear--; }
-  }
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0;  calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
   renderCalendar();
   updateMetrics();
 }
 
-function calGoToday() {
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent =
+    MONTH_NAMES[calMonth] + ' ' + calYear;
+
+  const grid  = document.getElementById('cal-grid');
   const today = new Date();
-  calYear  = today.getFullYear();
-  calMonth = today.getMonth();
-  calWeekStart = getWeekStart(today);
-  renderCalendar();
-  updateMetrics();
-}
-
-function setCalView(view) {
-  calView = view;
-  localStorage.setItem('shiftpay-calendar-view', view);
-  if (view === 'week') {
-    // Position week at the first week that contains days of the current month
-    calWeekStart = getWeekStart(new Date(calYear, calMonth, 1));
-    calYear  = calWeekStart.getFullYear();
-    calMonth = calWeekStart.getMonth();
-  } else {
-    // Sync month to whatever week was shown
-    calYear  = calWeekStart.getFullYear();
-    calMonth = calWeekStart.getMonth();
-  }
-  renderCalendar();
-  updateMetrics();
-}
-
-// Legacy alias kept for any internal callers
-function changeMonth(delta) { calNav(delta); }
-
-// ── Month view renderer ──────────────────────────────────────
-function renderMonthView() {
-  const grid     = document.getElementById('cal-grid');
-  const weekView = document.getElementById('week-view');
-  grid.style.display     = '';
-  weekView.style.display = 'none';
-
-  const today    = new Date();
   const todayStr = `${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
 
+  // Remove existing day cells (keep the 7 DOW headers)
   grid.querySelectorAll('.cal-day').forEach(c => c.remove());
 
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDow    = new Date(calYear, calMonth, 1).getDay();
 
+  // Leading blank cells
   for (let i = 0; i < firstDow; i++) {
     const blank = document.createElement('div');
     blank.className = 'cal-day';
     grid.appendChild(blank);
   }
 
+  // Day cells
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${calYear}-${pad2(calMonth+1)}-${pad2(d)}`;
     const override = shiftData[dateStr];
     const cell     = document.createElement('div');
+
     let cls = 'cal-day';
     if (dateStr === todayStr) cls += ' today';
 
     if (override) {
+      // Determine display class from what modifiers are present
       let dispType = 'worked';
-      if (override.pickupHrs > 0)                                      dispType = 'pickup';
+      if (override.pickupHrs > 0)                             dispType = 'pickup';
       else if (override.type === 'gave' && !override.otHrs && !override.dtHrs) dispType = 'gave';
-      else if (override.otHrs > 0 || override.dtHrs > 0)               dispType = 'ot';
-      else if (override.lwopHrs > 0 || override.gaveHrs > 0)           dispType = 'early';
+      else if (override.otHrs > 0 || override.dtHrs > 0)     dispType = 'ot';
+      else if (override.lwopHrs > 0 || override.gaveHrs > 0) dispType = 'early';
       cls += ' ' + dispType;
       cell.className = cls;
       cell.innerHTML = d + '<div class="cal-dot"></div>';
     } else {
+      // Check bid schedule
       const bid = getBidForDate(dateStr);
-      if (bid.isWorkday) { cls += ' worked'; }
-      cell.className = cls;
-      cell.textContent = d;
+      if (bid.isWorkday) {
+        cls += ' worked';
+        cell.className = cls;
+        cell.textContent = d; // no dot — bid-inferred
+      } else {
+        cell.className = cls;
+        cell.textContent = d;
+      }
     }
 
     cell.addEventListener('click', () => showDayDetail(dateStr));
     grid.appendChild(cell);
-  }
-}
-
-// ── Week view renderer ───────────────────────────────────────
-function renderWeekView() {
-  const grid     = document.getElementById('cal-grid');
-  const weekView = document.getElementById('week-view');
-  grid.style.display     = 'none';
-  weekView.style.display = 'flex';
-  weekView.innerHTML     = '';
-
-  const today    = new Date();
-  const todayStr = `${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
-  const DOW_S    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const MAX_VIS  = 2;
-
-  for (let i = 0; i < 7; i++) {
-    const day     = new Date(calWeekStart);
-    day.setDate(calWeekStart.getDate() + i);
-    const dateStr = `${day.getFullYear()}-${pad2(day.getMonth()+1)}-${pad2(day.getDate())}`;
-    const override = shiftData[dateStr];
-    const bid      = getBidForDate(dateStr);
-
-    const otHrs     = override?.otHrs     || 0;
-    const dtHrs     = override?.dtHrs     || 0;
-    const lwopHrs   = override?.lwopHrs   || 0;
-    const gaveHrs   = override?.gaveHrs   || 0;
-    const pickupHrs = override?.pickupHrs || 0;
-    const isFullGave = override?.type === 'gave' && !otHrs && !dtHrs;
-
-    // Row background type (priority order)
-    let rowType = bid.isWorkday ? 'worked' : 'off';
-    if (pickupHrs > 0)                    rowType = 'pickup';
-    else if (isFullGave)                  rowType = 'gave';
-    else if (otHrs > 0 || dtHrs > 0)     rowType = 'ot';
-    else if (lwopHrs > 0 || gaveHrs > 0) rowType = 'early';
-
-    // Base line text
-    let baseText = 'Day off';
-    if (isFullGave) {
-      baseText = 'Gave shift away';
-    } else if (bid.isWorkday && bid.startTime) {
-      const endTime = addMinutes(bid.startTime, 8.5 * 60);
-      baseText = PAID_HRS.toFixed(1) + ' hrs · ' + fmtTime(bid.startTime) + '–' + fmtTime(endTime);
-    } else if (pickupHrs > 0) {
-      baseText = '+' + pickupHrs.toFixed(1) + ' hrs picked up';
-    }
-
-    // Extra chips — each non-zero exception field
-    const extras = [];
-    if (otHrs     > 0) extras.push({ cls: 'ot-extra',     text: '+' + otHrs.toFixed(1) + ' OT' });
-    if (dtHrs     > 0) extras.push({ cls: 'ot-extra',     text: '+' + dtHrs.toFixed(1) + ' DT' });
-    if (pickupHrs > 0 && bid.isWorkday)
-                       extras.push({ cls: 'pickup-extra', text: '+' + pickupHrs.toFixed(1) + ' picked up' });
-    if (gaveHrs   > 0) extras.push({ cls: 'gave-extra',   text: '−' + gaveHrs.toFixed(1) + ' gave' });
-    if (lwopHrs   > 0) extras.push({ cls: 'lwop-extra',   text: '−' + lwopHrs.toFixed(1) + ' LWOP' });
-
-    const overflow = Math.max(0, extras.length - MAX_VIS);
-    const isToday  = dateStr === todayStr;
-
-    // Build DOM
-    const row = document.createElement('div');
-    row.className = 'week-row ' + rowType + (isToday ? ' today' : '');
-
-    const dayEl = document.createElement('div');
-    dayEl.className = 'week-row-day';
-    dayEl.textContent = DOW_S[day.getDay()] + ' ' + day.getDate();
-
-    const body = document.createElement('div');
-    body.className = 'week-row-body';
-
-    const baseEl = document.createElement('div');
-    baseEl.className = 'week-row-base';
-    baseEl.textContent = baseText;
-    body.appendChild(baseEl);
-
-    // Extra chip elements
-    const extraEls = extras.map((ex, idx) => {
-      const el = document.createElement('div');
-      el.className = 'week-row-extra ' + ex.cls;
-      if (idx >= MAX_VIS) el.style.display = 'none';
-      const chip = document.createElement('span');
-      chip.className = 'week-row-extra-chip';
-      chip.textContent = ex.text;
-      el.appendChild(chip);
-      body.appendChild(el);
-      return el;
-    });
-
-    // "+N more" label
-    let moreEl = null;
-    if (overflow > 0) {
-      moreEl = document.createElement('div');
-      moreEl.className = 'week-row-more';
-      moreEl.textContent = '+' + overflow + ' more';
-      body.appendChild(moreEl);
-    }
-
-    row.appendChild(dayEl);
-    row.appendChild(body);
-
-    // Expand/collapse arrow (only when there is overflow)
-    if (overflow > 0) {
-      const expandEl = document.createElement('span');
-      expandEl.className = 'week-row-expand';
-      expandEl.textContent = '›'; // ›
-      expandEl.addEventListener('click', e => {
-        e.stopPropagation();
-        const expanded = row.classList.toggle('week-row-expanded');
-        extraEls.forEach((el, idx) => {
-          if (idx >= MAX_VIS) el.style.display = expanded ? '' : 'none';
-        });
-        if (moreEl) moreEl.style.display = expanded ? 'none' : '';
-        expandEl.textContent = expanded ? '‹' : '›'; // ‹ or ›
-      });
-      row.appendChild(expandEl);
-    }
-
-    row.addEventListener('click', () => showDayDetail(dateStr));
-    weekView.appendChild(row);
-  }
-}
-
-// ── Main renderCalendar dispatcher ───────────────────────────
-function renderCalendar() {
-  // Sync toggle button active states
-  const btnM = document.getElementById('view-btn-month');
-  const btnW = document.getElementById('view-btn-week');
-  if (btnM) btnM.classList.toggle('active', calView === 'month');
-  if (btnW) btnW.classList.toggle('active', calView === 'week');
-
-  if (calView === 'week') {
-    document.getElementById('cal-month-label').textContent = getWeekLabel();
-    renderWeekView();
-  } else {
-    document.getElementById('cal-month-label').textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
-    renderMonthView();
   }
 }
 
