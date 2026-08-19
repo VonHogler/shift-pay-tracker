@@ -91,9 +91,60 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+    gap: 6px;
   }
-  .cal-nav { font-size: 18px; color: #888880; cursor: pointer; padding: 0 6px; line-height: 1; }
-  .cal-month { font-size: 14px; font-weight: 500; color: #1a1a18; }
+  .cal-header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    flex-shrink: 0;
+  }
+  .cal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .cal-nav { font-size: 18px; color: #888880; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .cal-month { font-size: 13px; font-weight: 500; color: #1a1a18; white-space: nowrap; }
+  .cal-today-btn {
+    font-size: 10.5px;
+    font-family: inherit;
+    font-weight: 500;
+    color: #888880;
+    background: transparent;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 6px;
+    padding: 4px 7px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .cal-today-btn:active { opacity: 0.6; }
+  .cal-view-toggle {
+    display: flex;
+    gap: 2px;
+    background: #f0f0ea;
+    border-radius: 7px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .cal-view-btn {
+    font-size: 10.5px;
+    font-family: inherit;
+    padding: 4px 7px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: #888880;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .cal-view-btn.active {
+    background: #fff;
+    color: #1a1a18;
+    font-weight: 600;
+    border: 0.5px solid #e0e0d8;
+  }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
   .cal-dow { font-size: 10px; color: #aaa; text-align: center; padding: 4px 0; }
   .cal-day {
@@ -125,6 +176,51 @@
   }
   .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #888880; }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Week view ── */
+  .week-list { display: flex; flex-direction: column; }
+  .week-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 0.5px solid #f0f0ea;
+    cursor: pointer;
+  }
+  .week-row:last-child { border-bottom: none; }
+  .week-row:active { background: #f9f9f5; }
+  .week-row-date {
+    flex-shrink: 0;
+    width: 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 1px;
+  }
+  .week-row-dow { font-size: 9.5px; color: #aaa; text-transform: uppercase; letter-spacing: 0.03em; }
+  .week-row-daynum { font-size: 15px; font-weight: 600; color: #1a1a18; }
+  .week-row.today .week-row-daynum {
+    color: #1a1a18;
+    box-shadow: 0 0 0 2px #1a1a18 inset;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .week-row-body { flex: 1; min-width: 0; }
+  .week-row-base { font-size: 12.5px; color: #1a1a18; }
+  .week-row-base.muted { color: #aaa; }
+  .week-detail-line { font-size: 11.5px; margin-top: 2px; font-weight: 500; }
+  .week-more-link {
+    display: inline-block;
+    font-size: 11px;
+    color: #888880;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 3px;
+  }
 
   /* ── Pay screen ── */
   .section-label {
@@ -1187,15 +1283,27 @@
     <!-- Calendar card -->
     <div class="card">
       <div class="cal-header">
-        <span class="cal-nav" onclick="changeMonth(-1)">&#8249;</span>
-        <span class="cal-month" id="cal-month-label">—</span>
-        <span class="cal-nav" onclick="changeMonth(1)">&#8250;</span>
+        <div class="cal-header-nav">
+          <span class="cal-nav" onclick="navCalendar(-1)">&#8249;</span>
+          <span class="cal-month" id="cal-month-label">—</span>
+          <span class="cal-nav" onclick="navCalendar(1)">&#8250;</span>
+        </div>
+        <div class="cal-header-actions">
+          <button class="cal-today-btn" onclick="goToToday()">Today</button>
+          <div class="cal-view-toggle">
+            <button class="cal-view-btn active" id="view-btn-month" onclick="setCalView('month')">Month</button>
+            <button class="cal-view-btn" id="view-btn-week" onclick="setCalView('week')">Week</button>
+          </div>
+        </div>
       </div>
       <div class="cal-grid" id="cal-grid">
         <div class="cal-dow">Su</div><div class="cal-dow">Mo</div><div class="cal-dow">Tu</div>
         <div class="cal-dow">We</div><div class="cal-dow">Th</div><div class="cal-dow">Fr</div>
         <div class="cal-dow">Sa</div>
         <!-- Days rendered by JS -->
+      </div>
+      <div class="week-list" id="week-list" style="display:none">
+        <!-- Week rows rendered by JS -->
       </div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#1D9E75;"></div>Regular</div>
@@ -2149,6 +2257,13 @@ const DEFAULTS = {
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-indexed
 
+// Calendar view mode — 'month' (default) or 'week', persisted across sessions
+let calView = (localStorage.getItem('shiftpay-calendar-view') === 'week') ? 'week' : 'month';
+// Sunday of the currently-displayed week (Week view only)
+let calWeekStart = getWeekStart(new Date());
+// Per-day expand/collapse state for "+N more" in Week view (ephemeral, not persisted)
+let weekExpanded = {};
+
 // shiftData: in-memory map of user-entered overrides { 'YYYY-MM-DD': shiftObj }
 // Loaded from localStorage 'shiftpay-shifts' on init and after any write.
 let shiftData = {};
@@ -2341,7 +2456,7 @@ function saveSettings() {
 
   localStorage.setItem('shiftpay-settings', JSON.stringify(data));
   showToast('Settings saved ✓');
-  renderCalendar();
+  renderCalendarView();
   updateMetrics();
 }
 
@@ -2357,7 +2472,7 @@ function resetSettings() {
   });
   loadSettings();
   showToast('Settings cleared');
-  renderCalendar();
+  renderCalendarView();
   updateMetrics();
 }
 
@@ -2409,7 +2524,7 @@ function restoreRecords(afterRestore) {
         }
         loadShiftData();
         loadSettings();
-        renderCalendar();
+        renderCalendarView();
         updateMetrics();
         if (typeof afterRestore === 'function') afterRestore();
         showToast('Records restored ✓');
@@ -2803,6 +2918,179 @@ function renderCalendar() {
     cell.addEventListener('click', () => showDayDetail(dateStr));
     grid.appendChild(cell);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WEEK VIEW
+// Purely additive alongside the Month grid above — renderCalendar()
+// (and its data source, the flat shift fields) is untouched. This
+// section only adds a second, optional way to view the same data.
+// ═══════════════════════════════════════════════════════════════
+const WEEK_DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Badge styling per block type — colors reused directly from the
+// existing day-sheet-badge / cal-day palette so Week view matches
+// the rest of the app exactly.
+const WEEK_BADGE_META = {
+  ot:     { label: 'OT',     color: '#633806', sign: '+' },
+  dt:     { label: 'DT',     color: '#633806', sign: '+' },
+  pickup: { label: 'Pickup', color: '#042C53', sign: '+' },
+  gave:   { label: 'Gave',   color: '#4B1528', sign: '−' },
+  early:  { label: 'Early',  color: '#4A1B0C', sign: '−' },
+};
+
+function getWeekStart(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+// A day's detail lines — real blocks if present, otherwise synthesized
+// from the flat fields so pre-blocks days still show a breakdown,
+// exactly like the badges already work today.
+function getDisplayBlocksForDay(override) {
+  if (!override) return [];
+  if (Array.isArray(override.blocks) && override.blocks.length > 0) return override.blocks;
+  const synth = [];
+  if (override.otHrs     > 0) synth.push({ type: 'ot',     hours: override.otHrs,     start: null, end: null });
+  if (override.dtHrs     > 0) synth.push({ type: 'dt',     hours: override.dtHrs,     start: null, end: null });
+  if (override.lwopHrs   > 0) synth.push({ type: 'early',  hours: override.lwopHrs,   start: null, end: null });
+  if (override.gaveHrs   > 0) synth.push({ type: 'gave',   hours: override.gaveHrs,   start: null, end: null });
+  if (override.pickupHrs > 0) synth.push({ type: 'pickup', hours: override.pickupHrs, start: null, end: null });
+  return synth;
+}
+
+function formatBlockLine(block) {
+  const meta = WEEK_BADGE_META[block.type] || { label: block.type, color: '#888880', sign: '+' };
+  if (block.start && block.end) {
+    return { color: meta.color, text: `${meta.sign} ${fmtTime(block.start)}–${fmtTime(block.end)}` };
+  }
+  return { color: meta.color, text: `${meta.sign}${(block.hours || 0).toFixed(1)} ${meta.label}` };
+}
+
+function toggleWeekRowExpand(e, dateStr) {
+  e.stopPropagation();
+  weekExpanded[dateStr] = !weekExpanded[dateStr];
+  renderWeekView();
+}
+
+function renderWeekHeaderLabel() {
+  const start = calWeekStart;
+  const end   = addDays(calWeekStart, 6);
+  const sMon  = MONTH_NAMES[start.getMonth()].slice(0, 3);
+  const eMon  = MONTH_NAMES[end.getMonth()].slice(0, 3);
+  const label = (start.getMonth() === end.getMonth())
+    ? `${sMon} ${start.getDate()}–${end.getDate()}`
+    : `${sMon} ${start.getDate()}–${eMon} ${end.getDate()}`;
+  document.getElementById('cal-month-label').textContent = label;
+}
+
+function renderWeekView() {
+  const list  = document.getElementById('week-list');
+  list.innerHTML = '';
+  const today    = new Date();
+  const todayStr = `${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
+
+  for (let i = 0; i < 7; i++) {
+    const d       = addDays(calWeekStart, i);
+    const dateStr = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    const override = shiftData[dateStr];
+    const bid      = getBidForDate(dateStr);
+
+    let baseLine;
+    if (bid.isWorkday) {
+      const endTime = addMinutes(bid.startTime, 8.5 * 60);
+      baseLine = PAID_HRS.toFixed(1) + ' hrs · ' + fmtTime(bid.startTime) + '–' + fmtTime(endTime);
+    } else {
+      baseLine = 'Day off';
+    }
+
+    const lines        = getDisplayBlocksForDay(override).map(formatBlockLine);
+    const expanded      = !!weekExpanded[dateStr];
+    const visibleLines  = expanded ? lines : lines.slice(0, 2);
+    const extra         = lines.length - visibleLines.length;
+
+    let detailHtml = visibleLines.map(l =>
+      `<div class="week-detail-line" style="color:${l.color}">${l.text}</div>`
+    ).join('');
+    if (extra > 0) {
+      detailHtml += `<a class="week-more-link">+${extra} more</a>`;
+    } else if (expanded && lines.length > 2) {
+      detailHtml += `<a class="week-more-link">Show less</a>`;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'week-row' + (dateStr === todayStr ? ' today' : '');
+    row.innerHTML = `
+      <div class="week-row-date">
+        <div class="week-row-dow">${WEEK_DOW_SHORT[d.getDay()]}</div>
+        <div class="week-row-daynum">${d.getDate()}</div>
+      </div>
+      <div class="week-row-body">
+        <div class="week-row-base${bid.isWorkday ? '' : ' muted'}">${baseLine}</div>
+        ${detailHtml}
+      </div>`;
+
+    row.addEventListener('click', () => showDayDetail(dateStr));
+    const moreLink = row.querySelector('.week-more-link');
+    if (moreLink) moreLink.addEventListener('click', (e) => toggleWeekRowExpand(e, dateStr));
+
+    list.appendChild(row);
+  }
+}
+
+// Toggle visibility between the Month grid and the Week list — the
+// underlying renderCalendar() grid is always kept up to date either way.
+function applyCalViewVisibility() {
+  document.getElementById('cal-grid').style.display   = (calView === 'week') ? 'none'  : 'grid';
+  document.getElementById('week-list').style.display   = (calView === 'week') ? 'block' : 'none';
+}
+
+// Single entry point every call site uses to refresh the calendar card —
+// wraps the untouched renderCalendar() and layers Week view on top.
+function renderCalendarView() {
+  renderCalendar();
+  if (calView === 'week') {
+    renderWeekHeaderLabel();
+    renderWeekView();
+  }
+  applyCalViewVisibility();
+}
+
+function navCalendar(delta) {
+  if (calView === 'week') changeWeek(delta);
+  else changeMonth(delta);
+}
+
+function changeWeek(delta) {
+  calWeekStart = addDays(calWeekStart, delta * 7);
+  calMonth = calWeekStart.getMonth();
+  calYear  = calWeekStart.getFullYear();
+  renderCalendarView();
+  updateMetrics();
+}
+
+function setCalView(view) {
+  calView = view;
+  localStorage.setItem('shiftpay-calendar-view', view);
+  document.getElementById('view-btn-month').classList.toggle('active', view === 'month');
+  document.getElementById('view-btn-week').classList.toggle('active', view === 'week');
+  renderCalendarView();
+}
+
+function goToToday() {
+  const t = new Date();
+  calMonth = t.getMonth();
+  calYear  = t.getFullYear();
+  calWeekStart = getWeekStart(t);
+  renderCalendarView();
+  updateMetrics();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3383,7 +3671,7 @@ function saveDayEntry() {
   if (!hasAnyEntry) {
     clearShiftEntry(currentDetailDate);
     closeDayDetail();
-    renderCalendar();
+    renderCalendarView();
     updateMetrics();
     showToast('Reset to bid schedule');
     return;
@@ -3414,7 +3702,7 @@ function saveDayEntry() {
 
   saveShiftEntry(currentDetailDate, shiftObj);
   closeDayDetail();
-  renderCalendar();
+  renderCalendarView();
   updateMetrics();
   showToast('Shift logged ✓');
 }
@@ -3423,7 +3711,7 @@ function clearDayEntry() {
   if (!currentDetailDate) return;
   clearShiftEntry(currentDetailDate);
   closeDayDetail();
-  renderCalendar();
+  renderCalendarView();
   updateMetrics();
   showToast('Override cleared');
 }
@@ -3599,7 +3887,7 @@ function wizFinish() {
   wizHide();
   // Reload settings into the main app and refresh views
   loadSettings();
-  renderCalendar();
+  renderCalendarView();
   updateMetrics();
   switchTab('calendar');
 }
@@ -3651,7 +3939,10 @@ function dismissInstall() {
   loadShiftData();
   loadSettings();
   checkBidTransition();
-  renderCalendar();
+  // Sync the Month/Week toggle buttons to the persisted view before first render
+  document.getElementById('view-btn-month').classList.toggle('active', calView === 'month');
+  document.getElementById('view-btn-week').classList.toggle('active', calView === 'week');
+  renderCalendarView();
   updateMetrics();
   initKofiBanner();
   checkBackupPrompt();
