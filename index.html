@@ -606,6 +606,40 @@
     border: 0.5px solid #e0e0d8;
   }
 
+  /* ── Shift-time block entry ── */
+  .entry-blocks-wrap { margin: 2px 0 8px; }
+  .entry-blocks-link {
+    font-size: 11.5px;
+    color: #888880;
+    text-decoration: underline;
+    cursor: pointer;
+    display: inline-block;
+  }
+  .entry-blocks-link.add-another { color: #1a1a18; font-weight: 600; margin-top: 2px; margin-right: 14px; }
+  .entry-blocks-link.muted { color: #aaa; }
+  .entry-blocks-link.remove { color: #b3402f; text-decoration: none; font-weight: 700; margin-left: 2px; }
+  .entry-blocks-list { margin: 2px 0 6px; }
+  .entry-block-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    flex-wrap: wrap;
+  }
+  .block-time-select {
+    font-size: 12px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 6px;
+    padding: 4px 3px;
+    max-width: 92px;
+  }
+  .block-time-sep { font-size: 11px; color: #aaa; }
+  .block-hrs-computed { font-size: 11px; color: #888880; min-width: 30px; }
+  .block-hours-wrap input { width: 44px; }
+
   /* ── Toast ── */
   .toast {
     position: fixed;
@@ -1983,47 +2017,69 @@
 
     <!-- OT / DT — shown on any day -->
     <div id="ds-ot-fields">
-      <div class="entry-field-row">
+      <div class="entry-field-row" id="ds-ot-plain-row">
         <label class="entry-label">OT hrs <span class="entry-label-sub">added at 1.5×</span></label>
         <div class="entry-input-wrap">
           <input type="number" id="ds-ot" min="0" step="0.5" placeholder="0">
           <span class="entry-unit">hrs</span>
         </div>
       </div>
-      <div class="entry-field-row">
+      <div class="entry-blocks-wrap">
+        <a class="entry-blocks-link" id="ds-ot-toggle-link" onclick="enableBlocks('ot')">Enter as shift time instead</a>
+        <div class="entry-blocks-list" id="ds-ot-blocks-list" style="display:none"></div>
+      </div>
+
+      <div class="entry-field-row" id="ds-dt-plain-row">
         <label class="entry-label">DT hrs <span class="entry-label-sub">added at 2×</span></label>
         <div class="entry-input-wrap">
           <input type="number" id="ds-dt" min="0" step="0.5" placeholder="0">
           <span class="entry-unit">hrs</span>
         </div>
       </div>
+      <div class="entry-blocks-wrap">
+        <a class="entry-blocks-link" id="ds-dt-toggle-link" onclick="enableBlocks('dt')">Enter as shift time instead</a>
+        <div class="entry-blocks-list" id="ds-dt-blocks-list" style="display:none"></div>
+      </div>
     </div>
 
     <!-- LWOP / Gave — workday only -->
     <div id="ds-worked-fields">
-      <div class="entry-field-row">
+      <div class="entry-field-row" id="ds-lwop-plain-row">
         <label class="entry-label">Left early <span class="entry-label-sub">LWOP, unpaid</span></label>
         <div class="entry-input-wrap">
           <input type="number" id="ds-lwop" min="0" step="0.5" placeholder="0">
           <span class="entry-unit">hrs</span>
         </div>
       </div>
-      <div class="entry-field-row">
+      <div class="entry-blocks-wrap">
+        <a class="entry-blocks-link" id="ds-lwop-toggle-link" onclick="enableBlocks('early')">Enter as shift time instead</a>
+        <div class="entry-blocks-list" id="ds-lwop-blocks-list" style="display:none"></div>
+      </div>
+
+      <div class="entry-field-row" id="ds-gave-plain-row">
         <label class="entry-label">Gave away <span class="entry-label-sub">hours forfeited</span></label>
         <div class="entry-input-wrap">
           <input type="number" id="ds-gave" min="0" step="0.5" placeholder="0">
           <span class="entry-unit">hrs</span>
         </div>
       </div>
+      <div class="entry-blocks-wrap">
+        <a class="entry-blocks-link" id="ds-gave-toggle-link" onclick="enableBlocks('gave')">Enter as shift time instead</a>
+        <div class="entry-blocks-list" id="ds-gave-blocks-list" style="display:none"></div>
+      </div>
     </div>
 
     <!-- Pickup field — shown for off days; also shown for worked days -->
-    <div class="entry-field-row" id="ds-pickup-field">
+    <div class="entry-field-row" id="ds-pickup-plain-row">
       <label class="entry-label">Picked up <span class="entry-label-sub">regular rate</span></label>
       <div class="entry-input-wrap">
         <input type="number" id="ds-pickup" min="0" step="0.5" placeholder="0">
         <span class="entry-unit">hrs</span>
       </div>
+    </div>
+    <div class="entry-blocks-wrap">
+      <a class="entry-blocks-link" id="ds-pickup-toggle-link" onclick="enableBlocks('pickup')">Enter as shift time instead</a>
+      <div class="entry-blocks-list" id="ds-pickup-blocks-list" style="display:none"></div>
     </div>
 
     <div class="entry-actions">
@@ -2995,6 +3051,155 @@ function clearEntryInputs() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SHIFT-TIME BLOCK ENTRY
+// Optional per-day "blocks" — an alternate way to log an exception
+// (OT / DT / left-early / gave / picked-up) as a start/end shift time
+// instead of typing raw hours, with support for multiple entries of
+// the same type on one day. Purely additive: the legacy plain-hours
+// inputs (ds-ot, ds-dt, ds-lwop, ds-gave, ds-pickup) and the top-level
+// otHrs/dtHrs/lwopHrs/gaveHrs/pickupHrs fields Pay reads are untouched
+// — blocks, when present for a type, are just summed to produce that
+// same top-level number. Type is always whatever the user picked;
+// nothing here infers or reclassifies a block from its duration.
+// ═══════════════════════════════════════════════════════════════
+const FIELD_META = {
+  ot:     { legacyId: 'ds-ot',   domKey: 'ot'    },
+  dt:     { legacyId: 'ds-dt',   domKey: 'dt'    },
+  early:  { legacyId: 'ds-lwop', domKey: 'lwop'  },
+  gave:   { legacyId: 'ds-gave', domKey: 'gave'  },
+  pickup: { legacyId: 'ds-pickup', domKey: 'pickup' },
+};
+const BLOCK_TYPES = Object.keys(FIELD_META);
+
+// blockState[type] = array of { hours, start, end, mode: 'hours'|'time' }
+let blockState = { ot: [], dt: [], early: [], gave: [], pickup: [] };
+
+function resetBlockState() {
+  BLOCK_TYPES.forEach(t => { blockState[t] = []; });
+}
+
+// 15-minute increment <option> list, reusing the same H:MM display as fmtTime
+function timeSelectOptions(selected) {
+  let html = '<option value="">—</option>';
+  for (let m = 0; m < 24 * 60; m += 15) {
+    const val = pad2(Math.floor(m / 60)) + ':' + pad2(m % 60);
+    html += `<option value="${val}"${val === selected ? ' selected' : ''}>${fmtTime(val)}</option>`;
+  }
+  return html;
+}
+
+// Hours between two "HH:MM" strings, handling an overnight crossover
+function hoursBetween(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff < 0) diff += 24 * 60;
+  return Math.round((diff / 60) * 100) / 100;
+}
+
+// Turn on shift-time block entry for a field — seeds one row from
+// whatever's currently in the plain hours input (if anything).
+function enableBlocks(type) {
+  if (blockState[type].length === 0) {
+    const seedHrs = readEntryDecimal(FIELD_META[type].legacyId) || 0;
+    blockState[type].push({ hours: seedHrs, start: null, end: null, mode: 'time' });
+  }
+  renderBlocks(type);
+}
+
+// Fold blocks back into the plain hours input and revert to legacy entry.
+function disableBlocks(type) {
+  const total = blockState[type].reduce((s, b) => s + (b.hours || 0), 0);
+  blockState[type] = [];
+  setEntryValue(FIELD_META[type].legacyId, total || '');
+  renderBlocks(type);
+}
+
+function addBlockRow(type) {
+  blockState[type].push({ hours: 0, start: null, end: null, mode: 'hours' });
+  renderBlocks(type);
+}
+
+function removeBlockRow(type, idx) {
+  blockState[type].splice(idx, 1);
+  renderBlocks(type);
+}
+
+function toggleRowMode(type, idx) {
+  const row = blockState[type][idx];
+  if (!row) return;
+  row.mode = row.mode === 'time' ? 'hours' : 'time';
+  renderBlocks(type);
+}
+
+function updateRowHours(type, idx, val) {
+  const row = blockState[type][idx];
+  if (!row) return;
+  row.hours = parseFloat(val) || 0;
+}
+
+function updateRowTime(type, idx, which, val) {
+  const row = blockState[type][idx];
+  if (!row) return;
+  row[which] = val || null;
+  if (row.start && row.end) row.hours = hoursBetween(row.start, row.end);
+  renderBlocks(type);
+}
+
+function renderBlocks(type) {
+  const meta      = FIELD_META[type];
+  const plainRow  = document.getElementById('ds-' + meta.domKey + '-plain-row');
+  const toggleLnk = document.getElementById('ds-' + meta.domKey + '-toggle-link');
+  const list      = document.getElementById('ds-' + meta.domKey + '-blocks-list');
+  const rows      = blockState[type];
+
+  if (rows.length === 0) {
+    if (plainRow)  plainRow.style.display  = '';
+    if (toggleLnk) toggleLnk.style.display = '';
+    if (list)      { list.style.display = 'none'; list.innerHTML = ''; }
+    return;
+  }
+
+  if (plainRow)  plainRow.style.display  = 'none';
+  if (toggleLnk) toggleLnk.style.display = 'none';
+  if (!list) return;
+  list.style.display = 'block';
+
+  let html = '';
+  rows.forEach((row, idx) => {
+    html += `<div class="entry-block-row">`;
+    if (row.mode === 'time') {
+      html += `<select class="block-time-select" onchange="updateRowTime('${type}',${idx},'start',this.value)">${timeSelectOptions(row.start)}</select>`;
+      html += `<span class="block-time-sep">to</span>`;
+      html += `<select class="block-time-select" onchange="updateRowTime('${type}',${idx},'end',this.value)">${timeSelectOptions(row.end)}</select>`;
+      html += `<span class="block-hrs-computed">${row.hours ? row.hours + 'h' : ''}</span>`;
+      html += `<a class="entry-blocks-link" onclick="toggleRowMode('${type}',${idx})">hrs</a>`;
+    } else {
+      html += `<div class="entry-input-wrap block-hours-wrap"><input type="number" min="0" step="0.25" class="block-hours-input" value="${row.hours || ''}" placeholder="0" onchange="updateRowHours('${type}',${idx},this.value)"><span class="entry-unit">hrs</span></div>`;
+      html += `<a class="entry-blocks-link" onclick="toggleRowMode('${type}',${idx})">time</a>`;
+    }
+    if (rows.length > 1) {
+      html += `<a class="entry-blocks-link remove" onclick="removeBlockRow('${type}',${idx})">✕</a>`;
+    }
+    html += `</div>`;
+  });
+  html += `<a class="entry-blocks-link add-another" onclick="addBlockRow('${type}')">+ Add another</a>`;
+  html += `<a class="entry-blocks-link muted" onclick="disableBlocks('${type}')">Use plain hours entry</a>`;
+  list.innerHTML = html;
+}
+
+// Sum of a type's block hours if blocks are active for it, else the
+// legacy plain-hours input — this is the number saved as top-level
+// otHrs/dtHrs/lwopHrs/gaveHrs/pickupHrs, exactly as Pay expects.
+function computeTypeHours(type) {
+  if (blockState[type].length > 0) {
+    return blockState[type].reduce((s, b) => s + (parseFloat(b.hours) || 0), 0);
+  }
+  return readEntryDecimal(FIELD_META[type].legacyId);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // DAY DETAIL BOTTOM SHEET
 // ═══════════════════════════════════════════════════════════════
 let currentDetailDate = null; // track which date the sheet is open for
@@ -3114,6 +3319,23 @@ function showDayDetail(dateStr) {
   setEntryValue('ds-gave',   gaveHrs);
   setEntryValue('ds-pickup', pickupHrs);
 
+  // Shift-time block entry — seed from saved blocks, if any. Days saved
+  // before this feature existed have no blocks array; treat that as
+  // "no detail available" and just show the plain hours above.
+  resetBlockState();
+  const savedBlocks = Array.isArray(override?.blocks) ? override.blocks : [];
+  BLOCK_TYPES.forEach(t => {
+    blockState[t] = savedBlocks
+      .filter(b => b && b.type === t)
+      .map(b => ({
+        hours: b.hours || 0,
+        start: b.start || null,
+        end:   b.end   || null,
+        mode:  (b.start && b.end) ? 'time' : 'hours',
+      }));
+    renderBlocks(t);
+  });
+
   // Show/hide fields based on whether it's a scheduled workday
   // OT/DT always visible (valid on any day); LWOP/Gave only on workdays
   document.getElementById('ds-worked-fields').style.display = isWorkday ? 'block' : 'none';
@@ -3128,17 +3350,21 @@ function showDayDetail(dateStr) {
 function saveDayEntry() {
   if (!currentDetailDate) return;
 
-  const otHrs     = readEntryDecimal('ds-ot');
-  const dtHrs     = readEntryDecimal('ds-dt');
-  const lwopHrs   = readEntryDecimal('ds-lwop');
-  const gaveHrs   = readEntryDecimal('ds-gave');
-  const pickupHrs = readEntryDecimal('ds-pickup');
+  // Blocks (if active for a type) govern that type's total; otherwise
+  // fall back to the plain hours input, exactly as before this feature.
+  const otHrs     = computeTypeHours('ot');
+  const dtHrs     = computeTypeHours('dt');
+  const lwopHrs   = computeTypeHours('early');
+  const gaveHrs   = computeTypeHours('gave');
+  const pickupHrs = computeTypeHours('pickup');
 
-  // Validate H:MM inputs if in that mode
+  // Validate H:MM inputs if in that mode — only for fields still on
+  // plain-hours entry; block rows use their own numeric hours input.
   if (entryFormat === 'hm') {
-    const ids = ['ds-ot','ds-dt','ds-lwop','ds-gave','ds-pickup'];
-    for (const id of ids) {
-      const raw = document.getElementById(id)?.value.trim();
+    const idsByType = { ot: 'ds-ot', dt: 'ds-dt', early: 'ds-lwop', gave: 'ds-gave', pickup: 'ds-pickup' };
+    for (const t of BLOCK_TYPES) {
+      if (blockState[t].length > 0) continue;
+      const raw = document.getElementById(idsByType[t])?.value.trim();
       if (raw && isNaN(hmToDec(raw))) {
         showToast('Invalid time — use H:MM e.g. 1:18');
         return;
@@ -3171,6 +3397,21 @@ function saveDayEntry() {
   if (safeGave >= PAID_HRS && !pickupHrs && !otHrs && !dtHrs) type = 'gave';
 
   const shiftObj = { type, otHrs, dtHrs, lwopHrs: safeLwop, gaveHrs: safeGave, pickupHrs };
+
+  // Persist shift-time detail additively — blocks array only exists
+  // when the user actually used it; top-level *Hrs fields above are
+  // still the sum Pay reads, unchanged either way.
+  const allBlocks = [];
+  BLOCK_TYPES.forEach(t => {
+    if (!isWorkday && (t === 'early' || t === 'gave')) return; // mirrors safeLwop/safeGave above
+    blockState[t].forEach(row => {
+      if (row.hours && row.hours > 0) {
+        allBlocks.push({ type: t, hours: row.hours, start: row.start || null, end: row.end || null });
+      }
+    });
+  });
+  if (allBlocks.length > 0) shiftObj.blocks = allBlocks;
+
   saveShiftEntry(currentDetailDate, shiftObj);
   closeDayDetail();
   renderCalendar();
