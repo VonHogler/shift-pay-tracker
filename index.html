@@ -1531,21 +1531,12 @@
         </select>
       </div>
       <div class="settings-row">
-        <div>
-          <div class="settings-row-label">OASDI (Social Security)</div>
-          <div class="settings-row-sub">Stops at annual wage cap (~$176,100)</div>
-        </div>
-        <div class="input-suffix">
-          <input type="number" id="s-oasdi" value="" step="0.05" min="0" placeholder="6.2">
-          <span>%</span>
-        </div>
+        <div class="settings-row-label">OASDI (Social Security)</div>
+        <div style="font-size:13px;color:#888880;">6.2% · fixed</div>
       </div>
       <div class="settings-row">
         <div class="settings-row-label">Medicare</div>
-        <div class="input-suffix">
-          <input type="number" id="s-medicare" value="" step="0.05" min="0" placeholder="1.45">
-          <span>%</span>
-        </div>
+        <div style="font-size:13px;color:#888880;">1.45% · fixed</div>
       </div>
       <div class="settings-row">
         <div>
@@ -1555,6 +1546,22 @@
         <div class="input-suffix">
           <input type="number" id="s-casdi" value="" step="0.05" min="0" placeholder="0">
           <span>%</span>
+        </div>
+      </div>
+      <div style="padding:0 14px 8px;">
+        <button class="wizard-skip-btn" id="sdi-helper-toggle" onclick="toggleSdiHelper()">Calculate it for me →</button>
+        <div id="sdi-helper" style="display:none; margin-top:8px;">
+          <div class="settings-row">
+            <div class="settings-row-label">Gross pay this period</div>
+            <div class="input-prefix"><span>$</span><input type="number" id="sdi-calc-gross" step="1" min="0" placeholder="0.00"></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-label">$ deducted for SDI/SUI on stub</div>
+            <div class="input-prefix"><span>$</span><input type="number" id="sdi-calc-deducted" step="0.01" min="0" placeholder="0.00"></div>
+          </div>
+          <div class="settings-save-row">
+            <button class="save-btn" style="flex:1;" onclick="calcSdiRate()">Calculate</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2002,16 +2009,14 @@
       <div class="wizard-input-row">
         <div class="wizard-field">
           <label class="wizard-label">OASDI <span class="wizard-label-sub">— Soc. Security</span></label>
-          <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
-            <input type="number" class="wizard-input" id="w-oasdi" step="0.05" min="0" value="6.2" style="border:none;background:transparent;text-align:right;padding-right:4px;">
-            <span style="font-size:14px;color:#888880;padding:9px 12px 9px 0;">%</span>
+          <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;padding:9px 12px;">
+            <span style="font-size:14px;color:#888880;">6.2% · fixed</span>
           </div>
         </div>
         <div class="wizard-field">
           <label class="wizard-label">Medicare</label>
-          <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
-            <input type="number" class="wizard-input" id="w-medicare" step="0.05" min="0" value="1.45" style="border:none;background:transparent;text-align:right;padding-right:4px;">
-            <span style="font-size:14px;color:#888880;padding:9px 12px 9px 0;">%</span>
+          <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;padding:9px 12px;">
+            <span style="font-size:14px;color:#888880;">1.45% · fixed</span>
           </div>
         </div>
       </div>
@@ -2020,6 +2025,28 @@
         <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
           <input type="number" class="wizard-input" id="w-casdi" step="0.05" min="0" placeholder="0" style="border:none;background:transparent;text-align:right;padding-right:4px;">
           <span style="font-size:14px;color:#888880;padding:9px 12px 9px 0;">%</span>
+        </div>
+      </div>
+      <div style="padding:2px 0 0;">
+        <button class="wizard-skip-btn" id="wiz-sdi-helper-toggle" onclick="toggleWizSdiHelper()">Calculate it for me →</button>
+        <div id="wiz-sdi-helper" style="display:none; margin-top:8px;">
+          <div class="wizard-input-row">
+            <div class="wizard-field">
+              <label class="wizard-label">Gross pay this period</label>
+              <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
+                <span style="font-size:14px;color:#888880;padding:9px 0 9px 12px;">$</span>
+                <input type="number" class="wizard-input" id="wiz-sdi-calc-gross" step="1" min="0" placeholder="0.00" style="border:none;background:transparent;padding-left:4px;">
+              </div>
+            </div>
+            <div class="wizard-field">
+              <label class="wizard-label">$ deducted for SDI/SUI</label>
+              <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
+                <span style="font-size:14px;color:#888880;padding:9px 0 9px 12px;">$</span>
+                <input type="number" class="wizard-input" id="wiz-sdi-calc-deducted" step="0.01" min="0" placeholder="0.00" style="border:none;background:transparent;padding-left:4px;">
+              </div>
+            </div>
+          </div>
+          <button class="wizard-skip-btn" onclick="wizCalcSdiRate()" style="width:100%;text-align:center;">Calculate</button>
         </div>
       </div>
 
@@ -2203,6 +2230,8 @@
 // ═══════════════════════════════════════════════════════════════
 const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
+const OASDI_RATE    = 6.2;
+const MEDICARE_RATE = 1.45;
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -2240,8 +2269,6 @@ const DEFAULTS = {
   'other-aftertax':     0,
 
   // Tax rates
-  'oasdi':              6.2,
-  'medicare':           1.45,
   'casdi':              0,    // varies by state — user enters their own rate
   'filing-status':      '',   // single | mfj | mfs | hoh — blank = not set
 
@@ -2343,6 +2370,43 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATE DISABILITY / SUI RATE HELPER (Settings + Wizard)
+// ═══════════════════════════════════════════════════════════════
+function toggleSdiHelper() {
+  const el = document.getElementById('sdi-helper');
+  el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function calcSdiRate() {
+  const gross = parseFloat(document.getElementById('sdi-calc-gross').value) || 0;
+  const deducted = parseFloat(document.getElementById('sdi-calc-deducted').value) || 0;
+  if (gross <= 0) {
+    showToast("Enter your gross pay first");
+    return;
+  }
+  const rate = (deducted / gross) * 100;
+  document.getElementById('s-casdi').value = rate.toFixed(2);
+  showToast(`SDI rate set to ${rate.toFixed(2)}% ✓`);
+}
+
+function toggleWizSdiHelper() {
+  const el = document.getElementById('wiz-sdi-helper');
+  el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function wizCalcSdiRate() {
+  const gross = parseFloat(document.getElementById('wiz-sdi-calc-gross').value) || 0;
+  const deducted = parseFloat(document.getElementById('wiz-sdi-calc-deducted').value) || 0;
+  if (gross <= 0) {
+    showToast("Enter your gross pay first");
+    return;
+  }
+  const rate = (deducted / gross) * 100;
+  document.getElementById('w-casdi').value = rate.toFixed(2);
+  showToast(`SDI rate set to ${rate.toFixed(2)}% ✓`);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2772,8 +2836,8 @@ function estimateNet(gross, settings, isPeriod1 = false) {
   const fedWH = (s['fed-wh'] || 0) * scale;
   const caWH  = (s['ca-wh']  || 0) * scale;
 
-  const oasdi    = taxable * (s['oasdi']   || 0) / 100;
-  const medicare = taxable * (s['medicare'] || 0) / 100;
+  const oasdi    = taxable * OASDI_RATE / 100;
+  const medicare = taxable * MEDICARE_RATE / 100;
   const casdi    = taxable * (s['casdi']    || 0) / 100;
 
   const afterTax = (s['401k-loan'] || 0) + (s['stock'] || 0)
@@ -2799,8 +2863,8 @@ function calcBreakdown(gross, settings, shiftDiff = 0) {
   const fedWH = (s['fed-wh'] || 0) * scale;
   const caWH  = (s['ca-wh']  || 0) * scale;
 
-  const oasdi    = taxable * (s['oasdi']   || 0) / 100;
-  const medicare = taxable * (s['medicare'] || 0) / 100;
+  const oasdi    = taxable * OASDI_RATE / 100;
+  const medicare = taxable * MEDICARE_RATE / 100;
   const casdi    = taxable * (s['casdi']    || 0) / 100;
 
   const loan     = s['401k-loan']      || 0;
@@ -3851,8 +3915,6 @@ function wizSaveAndFinish() {
   data['other-aftertax'] = parseFloat(document.getElementById('w-other-aftertax').value) || 0;
 
   // Taxes
-  data['oasdi']          = parseFloat(document.getElementById('w-oasdi').value)          || 6.2;
-  data['medicare']       = parseFloat(document.getElementById('w-medicare').value)       || 1.45;
   data['casdi']          = parseFloat(document.getElementById('w-casdi').value)          || 0;
   data['filing-status']  = document.getElementById('w-filing-status').value              || '';
   data['fed-wh']   = parseFloat(document.getElementById('w-fed-wh').value)   || 0;
