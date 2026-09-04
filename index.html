@@ -1446,6 +1446,9 @@
         </div>
         <input type="month" id="s-bid-next-month" class="settings-input wide" value="" placeholder="YYYY-MM">
       </div>
+      <div style="padding:4px 14px 0;">
+        <button class="wizard-skip-btn" onclick="copyCurrentBidToNext()">Copy current bid →</button>
+      </div>
       <div class="bid-sub-header" style="padding-top:4px;">Working day start times (blank = day off)</div>
       <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-0">Sun</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-0" value=""></div>
       <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-1">Mon</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-1" value=""></div>
@@ -2370,6 +2373,23 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COPY CURRENT BID → NEXT BID (form fields only; Save settings persists)
+// ═══════════════════════════════════════════════════════════════
+function copyCurrentBidToNext() {
+  for (let i = 0; i < 7; i++) {
+    const currEl = document.getElementById(`s-bid-curr-times-${i}`);
+    const nextEl = document.getElementById(`s-bid-next-times-${i}`);
+    const nextLbl = document.getElementById(`lbl-next-${i}`);
+    if (!currEl || !nextEl) continue;
+    nextEl.value = currEl.value;
+    const isOff = currEl.value.trim() === '';
+    nextEl.classList.toggle('off-day', isOff);
+    if (nextLbl) nextLbl.classList.toggle('off', isOff);
+  }
+  showToast('Current bid copied to next bid — review and save ✓');
 }
 
 // ═══════════════════════════════════════════════════════════════
