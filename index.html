@@ -1607,6 +1607,8 @@
       <button class="save-btn" onclick="saveSettings()">Save settings</button>
     </div>
 
+    <div style="text-align:center;padding:14px 0 4px;font-size:11px;color:#aaa;" id="app-version-line"></div>
+
   </div><!-- /screen-settings -->
 
   <!-- ═══════════════════════════════════════════ HELP SCREEN -->
@@ -1781,6 +1783,17 @@
     </div>
     <button class="install-banner-btn" onclick="installApp()">Install</button>
     <button class="install-banner-dismiss" onclick="dismissInstall()" aria-label="Dismiss">×</button>
+  </div>
+
+  <!-- Update available banner -->
+  <div class="install-banner" id="update-banner">
+    <div class="install-banner-icon">⬆️</div>
+    <div class="install-banner-body">
+      <div class="install-banner-title">Update available</div>
+      <div class="install-banner-sub" id="update-banner-sub">Tap to update</div>
+    </div>
+    <button class="install-banner-btn" onclick="applyUpdate()">Update</button>
+    <button class="install-banner-dismiss" onclick="dismissUpdateBanner()" aria-label="Dismiss">×</button>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -2235,6 +2248,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
+const APP_VERSION   = "0.8.3"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -4015,6 +4029,43 @@ function dismissInstall() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// AUTO-UPDATE (service worker waiting → banner → user-triggered reload)
+// Nothing here touches localStorage — only the SW cache and app shell
+// get replaced. See the 'message' handler in sw.js for the other half.
+// ═══════════════════════════════════════════════════════════════
+let waitingWorker = null;
+
+function showUpdateBanner(worker) {
+  waitingWorker = worker;
+  document.getElementById('update-banner').classList.add('show');
+
+  // Best-effort: ask the waiting worker which version it is, to label
+  // the banner and the Settings line. Falls back to generic copy if
+  // messaging fails for any reason — the update still works either way.
+  try {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = event => {
+      const v = event.data && event.data.version;
+      if (!v) return;
+      document.getElementById('update-banner-sub').textContent = `v${v} is ready`;
+      const line = document.getElementById('app-version-line');
+      if (line) line.textContent = `Update available — v${v}`;
+    };
+    worker.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+  } catch (e) { /* version label is a nice-to-have */ }
+}
+
+function applyUpdate() {
+  if (!waitingWorker) return;
+  waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+  document.getElementById('update-banner').classList.remove('show');
+}
+
+function dismissUpdateBanner() {
+  document.getElementById('update-banner').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
 (function init() {
@@ -4035,11 +4086,54 @@ function dismissInstall() {
     wizShow();
   }
 
-  // PWA service worker registration
+  // Current version, shown in Settings (flips to "Update available" once
+  // showUpdateBanner() detects a new waiting worker)
+  const versionLine = document.getElementById('app-version-line');
+  if (versionLine) versionLine.textContent = `ShiftComp Beta v${APP_VERSION} — Up to date`;
+
+  // If this load followed an update-triggered reload, confirm the update.
+  // Uses sessionStorage (not localStorage) purely as a one-shot flag —
+  // no user data involved.
+  if (sessionStorage.getItem('shiftpay-just-updated')) {
+    sessionStorage.removeItem('shiftpay-just-updated');
+    setTimeout(() => showToast('Updated successfully. Your records were preserved.'), 400);
+  }
+
+  // PWA service worker registration + auto-update flow
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('SW registered'))
+      .then(reg => {
+        console.log('SW registered');
+
+        // A new version may already be sitting in "waiting" from an
+        // earlier visit (e.g. this tab was open when it finished installing)
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          showUpdateBanner(reg.waiting);
+        }
+
+        // Watch for a new version starting to install from here on
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Finished installing and is waiting to activate — there's
+              // an existing controller, so this is an update, not a first install
+              showUpdateBanner(newWorker);
+            }
+          });
+        });
+      })
       .catch(err => console.warn('SW registration failed:', err));
+
+    // Once the new worker takes over, reload exactly once to pick it up
+    let swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (swRefreshing) return;
+      swRefreshing = true;
+      sessionStorage.setItem('shiftpay-just-updated', '1');
+      window.location.reload();
+    });
   }
 
   // Offline banner
