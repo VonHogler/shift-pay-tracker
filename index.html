@@ -2701,6 +2701,40 @@ function getBidForDate(dateStr) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// HOLIDAY OT
+// Hours worked on these dates are not paid as Regular — they're
+// reclassified entirely into the existing OT bucket at the existing
+// OT rate (1.5x). No separate "holiday premium" line item; this is a
+// reclassification of hours, not an addition. Verified against a real
+// pay stub covering Mother's Day 2026.
+// ═══════════════════════════════════════════════════════════════
+function nthSundayOfMonth(year, month /* 0-indexed */, n) {
+  const first = new Date(year, month, 1);
+  const firstSunday = 1 + ((7 - first.getDay()) % 7);
+  return new Date(year, month, firstSunday + (n - 1) * 7);
+}
+
+function getHolidayMap(year) {
+  const ymd = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const map = new Map();
+  map.set(`${year}-01-01`, "New Year's Day");
+  map.set(`${year}-07-04`, "Independence Day");
+  map.set(ymd(nthSundayOfMonth(year, 4, 2)), "Mother's Day");   // 2nd Sunday of May
+  map.set(ymd(nthSundayOfMonth(year, 5, 3)), "Father's Day");   // 3rd Sunday of June
+  return map;
+}
+
+function isHolidayDate(dateStr) {
+  const year = parseInt(dateStr.slice(0, 4), 10);
+  return getHolidayMap(year).has(dateStr);
+}
+
+function getHolidayName(dateStr) {
+  const year = parseInt(dateStr.slice(0, 4), 10);
+  return getHolidayMap(year).get(dateStr) || null;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MERGED SHIFT MAP
 // User-entered overrides (shiftpay-shifts) win; bid schedule fills blanks.
 // ═══════════════════════════════════════════════════════════════
@@ -2840,12 +2874,23 @@ function calcGross(shifts, settings, rateChangeDate) {
     // Off days get 0 base — only pickup/OT/DT count
     const base = isOffDay ? 0 : Math.max(0, PAID_HRS - lwopHrs - gaveHrs);
 
-    gross  += (base * rate)
-            + (pickupHrs * rate)
+    // Holiday OT: hours that would otherwise be paid at straight time
+    // (scheduled base + any picked-up hours) reclassify entirely into OT
+    // at the existing OT rate. Voluntary/mandatory OT and DT already
+    // logged for the day stay exactly as they were — they're separate
+    // from the straight-time bucket and just add on top, same as any
+    // other day.
+    const isHoliday   = isHolidayDate(dateStr);
+    const straightHrs = base + pickupHrs;
+    const regPortion  = isHoliday ? 0 : straightHrs;
+    const holidayOT   = isHoliday ? straightHrs : 0;
+
+    gross  += (regPortion * rate)
+            + (holidayOT * rate * otMult)
             + (ot * rate * otMult)
             + (dt * rate * dtMult);
-    regHrs += base + pickupHrs;
-    otHrs  += ot;
+    regHrs += regPortion;
+    otHrs  += ot + holidayOT;
     dtHrs  += dt;
   }
 
@@ -3614,6 +3659,7 @@ function showDayDetail(dateStr) {
   const bid           = getBidForDate(dateStr);
   const isUserEntered = !!override;
   const isWorkday     = bid.isWorkday;
+  const isHoliday     = isHolidayDate(dateStr);
 
   // Resolve shift modifiers
   const otHrs     = override?.otHrs     || 0;
@@ -3622,7 +3668,14 @@ function showDayDetail(dateStr) {
   const gaveHrs   = override?.gaveHrs   || 0;
   const pickupHrs = override?.pickupHrs || 0;
 
-  // Badge — priority: pickup > ot/dt > gave/lwop > worked > off
+  // Same straight-time base calcGross() uses — computed once here so the
+  // badge and the "Est. gross" figure below always agree with the Pay screen
+  const baseHrs     = isWorkday ? Math.max(0, PAID_HRS - lwopHrs - gaveHrs) : 0;
+  const straightHrs = baseHrs + pickupHrs;
+
+  // Badge — priority: pickup > ot/dt > gave/lwop > worked > off.
+  // Holiday OT overrides to 'ot' whenever there are straight-time hours
+  // to reclassify, since those hours are no longer paid as Regular.
   const badge    = document.getElementById('ds-badge');
   const badgeTxt = document.getElementById('ds-badge-text');
   let badgeType  = 'off';
@@ -3631,6 +3684,7 @@ function showDayDetail(dateStr) {
   else if (gaveHrs >= PAID_HRS)              badgeType = 'gave';
   else if (lwopHrs > 0 || gaveHrs > 0)      badgeType = 'early';
   else if (isWorkday)                        badgeType = 'worked';
+  if (isHoliday && straightHrs > 0)          badgeType = 'ot';
   const badgeLabels = {
     worked: 'Regular shift', ot: 'OT / DT shift', early: 'Modified shift',
     gave: 'Gave shift away', pickup: 'Pickup shift', off: 'Day off',
@@ -3657,8 +3711,6 @@ function showDayDetail(dateStr) {
   if (!isWorkday && pickupHrs === 0 && otHrs === 0 && dtHrs === 0 && !isUserEntered) {
     addRow('Status', 'Day off — tap below to log a pickup or extra hours', 'muted');
   } else {
-    const baseHrs = isWorkday ? Math.max(0, PAID_HRS - lwopHrs - gaveHrs) : 0;
-
     if (isWorkday) {
       addRow('Scheduled', stdHrs.toFixed(1) + ' hrs (8.0 paid, 0.5 unpaid break)', 'muted');
       if (lwopHrs > 0 || gaveHrs > 0) {
@@ -3671,7 +3723,10 @@ function showDayDetail(dateStr) {
     } else {
       addRow('Status', 'Scheduled day off', 'muted');
     }
-    if (pickupHrs > 0) addRow('Picked up',     '+' + pickupHrs.toFixed(1) + ' hrs (regular rate)', '');
+    if (isHoliday && straightHrs > 0) {
+      addRow('Holiday', (getHolidayName(dateStr) || 'Holiday') + ' — paid at ' + otMult + '× instead of Regular', '');
+    }
+    if (pickupHrs > 0) addRow('Picked up', '+' + pickupHrs.toFixed(1) + ' hrs' + (isHoliday ? ' (holiday OT rate)' : ' (regular rate)'), '');
     if (otHrs     > 0) addRow('Overtime',       '+' + otHrs.toFixed(1) + ' hrs @ ' + otMult + '×', '');
     if (dtHrs     > 0) addRow('Double time',    '+' + dtHrs.toFixed(1) + ' hrs @ ' + dtMult + '×', '');
 
@@ -3680,8 +3735,13 @@ function showDayDetail(dateStr) {
       : '$' + regRate.toFixed(2) + '/hr';
     addRow('Pay rate', rateLabel, '');
 
-    const dayGross = (baseHrs * rate)
-                   + (pickupHrs * rate)
+    // Same reclassification calcGross() applies at the period level —
+    // straight-time hours (base + pickup) move into the OT bucket on a
+    // qualifying holiday instead of being paid as Regular.
+    const regPortion = isHoliday ? 0 : straightHrs;
+    const holidayOT  = isHoliday ? straightHrs : 0;
+    const dayGross = (regPortion * rate)
+                   + (holidayOT * rate * otMult)
                    + (otHrs * rate * otMult)
                    + (dtHrs * rate * dtMult);
     addRow('Est. gross', '$' + dayGross.toFixed(2), 'green');
