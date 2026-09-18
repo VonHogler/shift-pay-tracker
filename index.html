@@ -904,6 +904,46 @@
   .help-footer a { color: #aaa; text-decoration: none; }
   .help-footer a:hover { color: #666; }
 
+  /* ── Feedback sheet (reuses .day-sheet-backdrop/.day-sheet chrome) ── */
+  .feedback-option {
+    font-size: 13px;
+    font-family: inherit;
+    color: #444440;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .feedback-option:last-child { margin-bottom: 0; }
+  .feedback-option.selected {
+    background: #1a1a18;
+    color: #fff;
+    border-color: #1a1a18;
+  }
+  .feedback-textarea {
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1a18;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .feedback-textarea:focus {
+    outline: none;
+    border-color: #1a1a18;
+    background: #fff;
+  }
+
   /* ── Ko-fi banner ── */
   .kofi-banner {
     display: flex;
@@ -1763,8 +1803,11 @@
     </div>
 
     <div class="help-footer">
+      <div style="margin-bottom:10px;">
+        <button class="reset-btn" style="width:100%;box-sizing:border-box;" onclick="openFeedback()">💬 Found something wrong? Send feedback</button>
+      </div>
       <div style="margin-bottom:6px;">
-        <div style="color:#444440;font-size:13px;">📧 Feedback or issues: <strong>customerservice@vonhogler.com</strong></div>
+        <div style="color:#444440;font-size:13px;">📧 Or email directly: <strong>customerservice@vonhogler.com</strong></div>
       </div>
       <div style="margin-bottom:6px;">
         <a href="https://ko-fi.com/shiftcalc" target="_blank" rel="noopener" style="color:#666660;text-decoration:none;">☕ Follow on Ko-fi to get notified when updates ship</a>
@@ -2139,6 +2182,34 @@
 </div><!-- /wizard-overlay -->
 
 <!-- ═══════════════════════════════════════════ DAY DETAIL SHEET -->
+<!-- Structured feedback sheet — reuses the day-sheet chrome/CSS -->
+<div class="day-sheet-backdrop" id="feedback-backdrop" onclick="closeFeedback()"></div>
+<div class="day-sheet" id="feedback-sheet">
+  <div class="day-sheet-handle"></div>
+  <div class="day-sheet-header">
+    <div>
+      <div class="day-sheet-date">Found something wrong?</div>
+      <div class="day-sheet-dow">Goes straight to my inbox — no account, no tracking</div>
+    </div>
+    <button class="day-sheet-close" onclick="closeFeedback()">✕</button>
+  </div>
+  <div class="day-sheet-rows">
+    <div class="help-subsection" style="margin-top:2px;">What happened?</div>
+    <button class="feedback-option" onclick="selectFeedbackType('Pay looks wrong', this)">Pay looks wrong</button>
+    <button class="feedback-option" onclick="selectFeedbackType('Schedule looks wrong', this)">Schedule looks wrong</button>
+    <button class="feedback-option" onclick="selectFeedbackType('Something is confusing', this)">Something is confusing</button>
+    <button class="feedback-option" onclick="selectFeedbackType('Feature request', this)">Feature request</button>
+    <button class="feedback-option" onclick="selectFeedbackType('Other', this)">Other</button>
+
+    <div class="help-subsection">Tell me what happened</div>
+    <textarea class="feedback-textarea" id="feedback-text" placeholder="What were you doing, what did you expect, what happened instead..."></textarea>
+
+    <div class="settings-save-row" style="margin-top:14px;">
+      <button class="save-btn" onclick="sendFeedback()">Send feedback</button>
+    </div>
+  </div>
+</div>
+
 <div class="day-sheet-backdrop" id="day-sheet-backdrop" onclick="closeDayDetail()"></div>
 <div class="day-sheet" id="day-sheet">
   <div class="day-sheet-handle"></div>
@@ -2387,6 +2458,47 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STRUCTURED FEEDBACK (Help section)
+// No backend, no third-party form — this builds a mailto: link and
+// hands off to the user's own mail app. Nothing is sent, stored, or
+// tracked from inside the app itself, and no diagnostic info (version,
+// screen, pay period) is attached automatically.
+// ═══════════════════════════════════════════════════════════════
+let feedbackType = null;
+
+function openFeedback() {
+  feedbackType = null;
+  document.querySelectorAll('.feedback-option').forEach(el => el.classList.remove('selected'));
+  document.getElementById('feedback-text').value = '';
+  document.getElementById('feedback-backdrop').classList.add('open');
+  document.getElementById('feedback-sheet').classList.add('open');
+}
+
+function closeFeedback() {
+  document.getElementById('feedback-backdrop').classList.remove('open');
+  document.getElementById('feedback-sheet').classList.remove('open');
+}
+
+function selectFeedbackType(type, el) {
+  feedbackType = type;
+  document.querySelectorAll('.feedback-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function sendFeedback() {
+  if (!feedbackType) {
+    showToast('Pick what happened first');
+    return;
+  }
+  const text = document.getElementById('feedback-text').value.trim();
+  const subject = `ShiftComp feedback: ${feedbackType}`;
+  const body = `What happened: ${feedbackType}\n\n${text || '(no additional details entered)'}`;
+  const mailto = `mailto:customerservice@vonhogler.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailto;
+  closeFeedback();
 }
 
 // ═══════════════════════════════════════════════════════════════
