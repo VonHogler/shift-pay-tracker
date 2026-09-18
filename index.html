@@ -2797,15 +2797,34 @@ function clearShiftEntry(dateStr) {
 // Uses current bid if date >= bid-curr-start, else previous bid.
 // ═══════════════════════════════════════════════════════════════
 function getBidForDate(dateStr) {
-  const s         = getSettings();
-  const date      = new Date(dateStr + 'T12:00:00');
+  const s    = getSettings();
+  const date = new Date(dateStr + 'T12:00:00');
+  const dow  = date.getDay(); // 0=Sun … 6=Sat
+
+  // A queued next bid previews from its first Sunday onward, even before
+  // checkBidTransition() has actually promoted it on the real device
+  // clock — otherwise there's no way to check a future bid schedule
+  // ahead of time. nthSundayOfMonth() is defined below (Holiday OT
+  // section) but reused here rather than duplicating the offset math —
+  // function declarations are hoisted, so the call is safe regardless
+  // of source order.
+  const nextMonth = s['bid-next-month'] || '';
+  if (nextMonth) {
+    const [nyear, nmonth] = nextMonth.split('-').map(Number);
+    const nextFirstSunday = nthSundayOfMonth(nyear, nmonth - 1, 1);
+    if (date >= nextFirstSunday) {
+      const nextTimes = s['bid-next-times'];
+      const startTime = Array.isArray(nextTimes) ? (nextTimes[dow] || '') : '';
+      return { isWorkday: startTime !== '', startTime };
+    }
+  }
+
   const currStart = s['bid-curr-start'] ? new Date(s['bid-curr-start'] + 'T12:00:00') : null;
 
   const times = (currStart && date >= currStart)
     ? s['bid-curr-times']
     : s['bid-prev-times'];
 
-  const dow       = date.getDay(); // 0=Sun … 6=Sat
   const startTime = Array.isArray(times) ? (times[dow] || '') : '';
   const isWorkday = startTime !== '';
 
@@ -3081,9 +3100,7 @@ function checkBidTransition() {
   if (!nextMonth) return;
 
   const [year, month] = nextMonth.split('-').map(Number);
-  const firstDay = new Date(year, month - 1, 1);
-  const offset   = (7 - firstDay.getDay()) % 7;
-  const firstSun = new Date(year, month - 1, 1 + offset);
+  const firstSun = nthSundayOfMonth(year, month - 1, 1); // shared with getBidForDate()'s next-bid preview
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
