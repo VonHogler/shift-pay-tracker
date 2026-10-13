@@ -1300,6 +1300,32 @@
     margin-bottom: 1rem;
   }
   .gross-only-card .wizard-next-btn { width: 100%; margin-top: 10px; padding: 9px 0; font-size: 13px; }
+  /* Wizard deductions step: "start with just your schedule" card */
+  .wiz-skip-card {
+    background: #E1F5EE;
+    border: 1px solid #5DCAA5;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 1.25rem;
+  }
+  .wiz-skip-card-title { font-size: 15px; font-weight: 600; color: #1a1a18; line-height: 1.3; margin-bottom: 6px; }
+  .wiz-skip-card-text  { font-size: 13px; color: #444441; line-height: 1.5; }
+  .wiz-skip-card-btn {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #1a1a18;
+    background: #fff;
+    border: 1px solid #1a1a18;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .wiz-skip-card-btn:active { opacity: 0.7; }
   .wizard-error { font-size: 12px; color: #A32D2D; margin-top: 8px; line-height: 1.45; }
   .wizard-error:empty { display: none; }
 
@@ -2156,9 +2182,10 @@
       <div class="wizard-title">Your deductions</div>
       <div class="wizard-desc">Enter your per-period deduction amounts. Find these on any recent pay stub. Leave anything at $0 if it doesn't apply to you.</div>
 
-      <div class="gross-only-card">
-        You can start with just your schedule. Until you add deductions, ShiftComp shows your gross pay only, not what lands in your account. You can add them anytime in Settings.
-        <div style="margin-top:6px;"><button class="wizard-skip-btn" onclick="wizSkipDeductions()">Skip for now</button></div>
+      <div class="wiz-skip-card">
+        <div class="wiz-skip-card-title">Want to start with just your schedule?</div>
+        <div class="wiz-skip-card-text">Until you add deductions, ShiftComp shows your gross pay only, not what lands in your account. You can add them anytime in Settings.</div>
+        <button class="wiz-skip-card-btn" onclick="wizSkipDeductions()">Skip for now</button>
       </div>
 
       <div class="wizard-section-label">Pre-tax (reduces taxable income)</div>
@@ -2521,7 +2548,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.8.5"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.8.6"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
