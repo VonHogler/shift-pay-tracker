@@ -1288,6 +1288,61 @@
     margin-bottom: 0.75rem;
     line-height: 1.5;
   }
+
+  /* ── Install gate (shown before the wizard on phones, not installed) ── */
+  .gate-logo { height: 30px; width: auto; display: block; margin: 0 auto 1.25rem; }
+  .gate-screen { display: none; }
+  .gate-screen.active { display: block; }
+  .gate-steps { margin: 0 0 1rem; }
+  .gate-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 0.5px solid #f0f0ea;
+    font-size: 13px;
+    color: #1a1a18;
+    line-height: 1.5;
+  }
+  .gate-step:last-child { border-bottom: none; }
+  .gate-step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #1a1a18;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .gate-step-body { flex: 1; min-width: 0; }
+  .gate-illo {
+    display: block;
+    margin-top: 8px;
+    width: 100%;
+    max-width: 240px;
+    height: auto;
+  }
+  .gate-share-inline {
+    display: inline-block;
+    width: 16px; height: 16px;
+    vertical-align: -3px;
+  }
+  .gate-actions { display: flex; flex-direction: column; gap: 8px; margin: 1.25rem 0 0.5rem; }
+  .gate-actions .wizard-next-btn,
+  .gate-actions .wizard-back-btn { width: 100%; flex: none; }
+  .gate-confirm { font-size: 12px; color: #0F6E56; text-align: center; min-height: 18px; }
+  .gate-after { font-size: 12px; color: #888880; line-height: 1.55; margin-top: 4px; }
+  .gate-fallback { display: none; margin-top: 0.75rem; }
+  .gate-fallback.show { display: block; }
+  .gate-footer { text-align: center; margin-top: 1.25rem; }
+  .gate-ios-note {
+    font-size: 11px;
+    color: #aaa;
+    line-height: 1.5;
+    margin-top: 6px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -1691,7 +1746,7 @@
 
         <div class="help-platform">
           <div class="help-platform-label ios">iPhone / iPad (Safari)</div>
-          <div class="help-note" style="margin-bottom:10px;">⚠️ On iOS, you <strong>must use Safari</strong>. Chrome and other browsers on iPhone cannot install web apps.</div>
+          <div class="help-note" style="margin-bottom:10px;">⚠️ On iPhone, <strong>Safari</strong> is the most reliable way to install. Other browsers may not show the option.</div>
           <div class="help-step"><span class="help-step-num">1</span><div>Open the app in <strong>Safari</strong>.</div></div>
           <div class="help-step"><span class="help-step-num">2</span><div>Tap the <strong>Share button</strong> (the box with an arrow pointing up, at the bottom of the screen).</div></div>
           <div class="help-step"><span class="help-step-num">3</span><div>Scroll down and tap <strong>"Add to Home Screen"</strong>.</div></div>
@@ -1842,6 +1897,122 @@
   <div class="toast" id="toast"></div>
 
 </div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════ INSTALL GATE -->
+<!-- Shown instead of the wizard on a phone browser tab with no saved
+     settings. Install first, then the wizard runs inside the installed app. -->
+<div class="wizard-overlay hidden" id="install-gate">
+  <div class="wizard-card">
+    <img src="shiftcomp-wordmark.svg" alt="ShiftComp" class="gate-logo">
+
+    <!-- A + B: Android (install button when the prompt is ready, menu steps when not) -->
+    <div class="gate-screen" id="gate-android">
+      <div class="wizard-title">Put ShiftComp on your phone</div>
+      <div class="wizard-desc">Install it first, then we will set up your schedule. Works offline once installed.</div>
+      <div id="gate-android-btn-block">
+        <div class="gate-actions">
+          <button class="wizard-next-btn" onclick="gateInstall()">Install ShiftComp</button>
+        </div>
+      </div>
+      <div id="gate-android-steps-block">
+        <div class="gate-after" id="gate-android-steps-intro" style="display:none; margin-bottom:6px;">If the install box did not come up, you can do it from the browser menu:</div>
+        <div class="gate-steps">
+          <div class="gate-step"><span class="gate-step-num">1</span><div class="gate-step-body">Tap the <strong>three-dot menu</strong> in the top corner of your browser.</div></div>
+          <div class="gate-step"><span class="gate-step-num">2</span><div class="gate-step-body">Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</div></div>
+          <div class="gate-step"><span class="gate-step-num">3</span><div class="gate-step-body">Confirm, then open ShiftComp from your home screen.</div></div>
+        </div>
+        <div class="gate-after">The wording can be a little different depending on your browser.</div>
+      </div>
+    </div>
+
+    <!-- C: iPhone / iPad in Safari -->
+    <div class="gate-screen" id="gate-ios-safari">
+      <div class="wizard-title">Put ShiftComp on your iPhone</div>
+      <div class="wizard-desc">Install it first, then we will set up your schedule. Works offline once installed.</div>
+      <div class="gate-steps">
+        <div class="gate-step"><span class="gate-step-num">1</span><div class="gate-step-body">
+          Tap the <strong>Share</strong> icon
+          <svg class="gate-share-inline" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11.5"/><path d="M8.2 6.8L12 3l3.8 3.8"/><path d="M8.5 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1.5"/></svg>
+          at the bottom of Safari. If you do not see it, tap the three dots first.
+          <svg class="gate-illo" viewBox="0 0 240 52" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="239" height="51" rx="12" fill="#f2f2f7" stroke="#e0e0d8"/>
+            <path d="M28 18l-8 8 8 8" fill="none" stroke="#007AFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M68 18l8 8-8 8" fill="none" stroke="#c7c7cc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="120" cy="26" r="19" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="2"/>
+            <g fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M120 14v13"/><path d="M115.5 18.5L120 14l4.5 4.5"/>
+              <path d="M116 22h-3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V24a2 2 0 0 0-2-2h-3"/>
+            </g>
+            <g fill="none" stroke="#007AFF" stroke-width="2" stroke-linejoin="round">
+              <path d="M163 17h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3h-7z"/><path d="M183 17h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              <rect x="206" y="19" width="14" height="14" rx="3"/><path d="M210 16h10a3 3 0 0 1 3 3v10"/>
+            </g>
+          </svg>
+        </div></div>
+        <div class="gate-step"><span class="gate-step-num">2</span><div class="gate-step-body">
+          Scroll down and tap <strong>Add to Home Screen</strong>.
+          <svg class="gate-illo" viewBox="0 0 240 92" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="239" height="91" rx="12" fill="#f2f2f7" stroke="#e0e0d8"/>
+            <rect x="10" y="10" width="220" height="30" rx="8" fill="#fff"/>
+            <text x="22" y="30" font-family="-apple-system, system-ui, sans-serif" font-size="12" fill="#b0b0b0">Add Bookmark</text>
+            <path d="M206 18h8v16l-4-3-4 3z" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linejoin="round"/>
+            <rect x="10" y="50" width="220" height="32" rx="8" fill="#fff" stroke="#5DCAA5" stroke-width="2"/>
+            <text x="22" y="71" font-family="-apple-system, system-ui, sans-serif" font-size="12.5" font-weight="600" fill="#1a1a18">Add to Home Screen</text>
+            <g fill="none" stroke="#1a1a18" stroke-width="1.7" stroke-linecap="round"><rect x="202" y="58" width="16" height="16" rx="4"/><path d="M210 62v8M206 66h8"/></g>
+          </svg>
+        </div></div>
+        <div class="gate-step"><span class="gate-step-num">3</span><div class="gate-step-body">
+          Tap <strong>Add</strong>, then open ShiftComp from your home screen.
+          <svg class="gate-illo" viewBox="0 0 240 44" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="239" height="43" rx="12" fill="#f2f2f7" stroke="#e0e0d8"/>
+            <text x="16" y="27" font-family="-apple-system, system-ui, sans-serif" font-size="12.5" fill="#007AFF">Cancel</text>
+            <text x="120" y="27" text-anchor="middle" font-family="-apple-system, system-ui, sans-serif" font-size="11.5" font-weight="600" fill="#1a1a18">Add to Home Screen</text>
+            <rect x="192" y="9" width="38" height="26" rx="13" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="2"/>
+            <text x="211" y="27" text-anchor="middle" font-family="-apple-system, system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#007AFF">Add</text>
+          </svg>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- D: iPhone / iPad, but not in Safari -->
+    <div class="gate-screen" id="gate-ios-other">
+      <div class="wizard-title">Open this in Safari first</div>
+      <div class="wizard-desc">Installing works most reliably from Safari on iPhone.</div>
+      <div class="gate-actions">
+        <button class="wizard-next-btn" onclick="gateCopyLink('gate-copy-confirm-ios')">Copy link</button>
+        <div class="gate-confirm" id="gate-copy-confirm-ios"></div>
+      </div>
+      <div class="gate-after">Then open Safari, paste the link into the address bar, and you will see the install steps.</div>
+    </div>
+
+    <!-- E: inside Facebook / Instagram / Messenger / etc. -->
+    <div class="gate-screen" id="gate-inapp">
+      <div class="wizard-title">Open this in your browser first</div>
+      <div class="wizard-desc">You are viewing this inside another app, which cannot install ShiftComp.</div>
+      <div class="gate-steps">
+        <div class="gate-step"><span class="gate-step-num">1</span><div class="gate-step-body">Tap the <strong>three dots</strong> or the <strong>share or compass icon</strong> in the top corner.</div></div>
+        <div class="gate-step"><span class="gate-step-num">2</span><div class="gate-step-body">Choose <strong>Open in browser</strong> <span id="gate-inapp-browser-name"></span>.</div></div>
+      </div>
+      <div class="gate-actions">
+        <a class="wizard-next-btn" id="gate-open-chrome" style="display:none; text-align:center; text-decoration:none;" href="#">Open in Chrome</a>
+        <button class="wizard-next-btn" id="gate-inapp-copy" onclick="gateCopyLink('gate-copy-confirm-inapp')">Copy link</button>
+        <div class="gate-confirm" id="gate-copy-confirm-inapp"></div>
+      </div>
+    </div>
+
+    <!-- After a successful install from the button -->
+    <div class="gate-screen" id="gate-installed">
+      <div class="wizard-done-icon">📲</div>
+      <div class="wizard-done-title">Installed</div>
+      <div class="wizard-done-desc">Open ShiftComp from your home screen to finish setup.</div>
+    </div>
+
+    <div class="gate-footer" id="gate-footer">
+      <button class="wizard-skip-btn" onclick="gateSkip()">Skip, just try it in the browser</button>
+      <div class="gate-ios-note" id="gate-ios-note" style="display:none;">On iPhone, setup done in the browser does not carry over to the home screen app. You can move it later with Save your records and Restore.</div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════ FIRST-RUN WIZARD -->
 <div class="wizard-overlay hidden" id="wizard-overlay">
@@ -2319,7 +2490,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.8.3"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.8.4"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -4186,6 +4357,7 @@ let installTimerFired = false;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
+  gateOnInstallPromptReady();
   maybeShowInstallBanner();
 });
 
@@ -4195,6 +4367,9 @@ function maybeShowInstallBanner() {
   if (installTimerFired) return;
   installTimerFired = true;
   setTimeout(() => {
+    // Don't stack the small banner on top of the install gate. Re-arm so
+    // gateSkip() can bring it back for people who choose the browser.
+    if (isInstallGateVisible()) { installTimerFired = false; return; }
     // Only show if still on calendar tab and prompt still available
     if (deferredInstallPrompt && !localStorage.getItem('shiftpay-install-dismissed')) {
       document.getElementById('install-banner').classList.add('show');
@@ -4215,6 +4390,173 @@ function installApp() {
 function dismissInstall() {
   document.getElementById('install-banner').classList.remove('show');
   localStorage.setItem('shiftpay-install-dismissed', '1');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INSTALL GATE (shown before the wizard on a phone browser tab)
+// Install first, then the wizard runs inside the installed app. On
+// iPhone the home-screen app and Safari keep separate storage, so setup
+// done in the tab would otherwise be lost after installing.
+// ═══════════════════════════════════════════════════════════════
+// Pure: which install screen fits this browser. Returns one of
+// 'inapp' | 'ios-other' | 'ios-safari' | 'android-prompt' | 'android-manual' | 'desktop'
+// (Marker lists live inside the function so it stays self-contained.)
+function detectInstallEnv(ua, platform, maxTouchPoints, hasPrompt) {
+  const IN_APP_BROWSER_MARKERS = ['FBAN', 'FBAV', 'FB_IAB', 'Instagram', 'Messenger', 'Snapchat', 'TikTok', 'musical_ly', 'Line/'];
+  const IOS_OTHER_BROWSER_MARKERS = ['CriOS', 'FxiOS', 'EdgiOS', 'OPiOS'];
+  ua = ua || '';
+  if (IN_APP_BROWSER_MARKERS.some(m => ua.indexOf(m) !== -1)) return 'inapp';
+  const isIOS = /iPhone|iPad/.test(ua) || (platform === 'MacIntel' && (maxTouchPoints || 0) > 1);
+  if (isIOS) {
+    return IOS_OTHER_BROWSER_MARKERS.some(m => ua.indexOf(m) !== -1) ? 'ios-other' : 'ios-safari';
+  }
+  if (/Android/i.test(ua)) return hasPrompt ? 'android-prompt' : 'android-manual';
+  return 'desktop';
+}
+
+// Pure: should the gate replace the wizard on this load?
+function shouldShowInstallGate(hasSettings, isStandalone, installShown, env) {
+  if (hasSettings || isStandalone || installShown) return false;
+  return env !== 'desktop';
+}
+
+function isRunningInstalled() {
+  const mm = window.matchMedia && window.matchMedia('(display-mode: standalone)');
+  return !!(mm && mm.matches) || navigator.standalone === true;
+}
+
+function currentInstallEnv() {
+  return detectInstallEnv(navigator.userAgent, navigator.platform, navigator.maxTouchPoints, !!deferredInstallPrompt);
+}
+
+function isInstallGateVisible() {
+  const gate = document.getElementById('install-gate');
+  return !!gate && !gate.classList.contains('hidden');
+}
+
+function gateShowScreen(id) {
+  document.querySelectorAll('#install-gate .gate-screen').forEach(el => {
+    el.classList.toggle('active', el.id === id);
+  });
+  document.getElementById('gate-footer').style.display = id === 'gate-installed' ? 'none' : '';
+}
+
+function gateSetAndroidMode(mode) {
+  // mode: 'prompt' (button only), 'manual' (steps only), 'retry' (button + steps)
+  document.getElementById('gate-android-btn-block').style.display   = mode === 'manual' ? 'none' : '';
+  document.getElementById('gate-android-steps-block').style.display = mode === 'prompt' ? 'none' : '';
+  document.getElementById('gate-android-steps-intro').style.display = mode === 'retry'  ? '' : 'none';
+}
+
+function showInstallGate(env) {
+  const isIOS = /iPhone|iPad/.test(navigator.userAgent || '') ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(navigator.userAgent || '');
+
+  if (env === 'inapp') {
+    gateShowScreen('gate-inapp');
+    document.getElementById('gate-inapp-browser-name').textContent =
+      isAndroid ? '(Chrome)' : isIOS ? '(Safari)' : '';
+    if (isAndroid) {
+      // Best effort: hand the link straight to Chrome. Not every in-app
+      // browser allows it, so the steps and Copy link stay as the fallback.
+      const appUrl = gateAppUrl();
+      const intentUrl = 'intent://' + appUrl.replace(/^https?:\/\//, '') +
+        '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
+        encodeURIComponent(appUrl) + ';end';
+      const chromeBtn = document.getElementById('gate-open-chrome');
+      chromeBtn.href = intentUrl;
+      chromeBtn.style.display = 'block';
+      // Copy link becomes the secondary action under Open in Chrome
+      document.getElementById('gate-inapp-copy').className = 'wizard-back-btn';
+    }
+  } else if (env === 'ios-other') {
+    gateShowScreen('gate-ios-other');
+  } else if (env === 'ios-safari') {
+    gateShowScreen('gate-ios-safari');
+  } else {
+    gateShowScreen('gate-android');
+    gateSetAndroidMode(env === 'android-prompt' ? 'prompt' : 'manual');
+  }
+  document.getElementById('gate-ios-note').style.display = isIOS ? '' : 'none';
+  document.getElementById('install-gate').classList.remove('hidden');
+}
+
+// beforeinstallprompt can arrive a moment after load: swap the manual
+// steps for the Install button if the Android screen is up.
+function gateOnInstallPromptReady() {
+  if (!isInstallGateVisible()) return;
+  const screen = document.getElementById('gate-android');
+  if (screen && screen.classList.contains('active')) gateSetAndroidMode('prompt');
+}
+
+function gateInstall() {
+  if (!deferredInstallPrompt) {
+    // Nothing to show (already used or not offered yet): point to the menu
+    gateSetAndroidMode('retry');
+    return;
+  }
+  // prompt() must run directly inside the tap handler
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(choice => {
+    deferredInstallPrompt = null;
+    if (choice && choice.outcome === 'accepted') {
+      gateShowInstalled();
+    } else {
+      // Dismissed: stay here. The browser may not offer the box twice in
+      // a row, so show the menu steps under the button as a backup.
+      gateSetAndroidMode('retry');
+    }
+  });
+}
+
+function gateShowInstalled() {
+  document.getElementById('install-banner').classList.remove('show');
+  localStorage.setItem('shiftpay-install-dismissed', '1');
+  gateShowScreen('gate-installed');
+}
+
+// Installed some other way (e.g. from the browser menu) while the gate is up
+window.addEventListener('appinstalled', () => {
+  if (isInstallGateVisible()) gateShowInstalled();
+});
+
+function gateAppUrl() {
+  return location.origin + location.pathname;
+}
+
+function gateCopyLink(confirmId) {
+  const url = gateAppUrl();
+  const done = () => {
+    const el = document.getElementById(confirmId);
+    if (!el) return;
+    el.textContent = 'Link copied';
+    setTimeout(() => { el.textContent = ''; }, 2500);
+  };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    done();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+function gateSkip() {
+  localStorage.setItem('shiftpay-install-shown', '1');
+  document.getElementById('install-gate').classList.add('hidden');
+  wizShow();
+  maybeShowInstallBanner();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4269,10 +4611,17 @@ function dismissUpdateBanner() {
   initKofiBanner();
   checkBackupPrompt();
 
-  // Show wizard if no settings have been saved yet
+  // No settings yet: on a phone browser tab, show the install gate first;
+  // otherwise (installed app, desktop, or after Skip) go to the wizard.
   const hasSettings = !!localStorage.getItem('shiftpay-settings');
   if (!hasSettings) {
-    wizShow();
+    const installEnv = currentInstallEnv();
+    if (shouldShowInstallGate(hasSettings, isRunningInstalled(),
+                              !!localStorage.getItem('shiftpay-install-shown'), installEnv)) {
+      showInstallGate(installEnv);
+    } else {
+      wizShow();
+    }
   }
 
   // Current version, shown in Settings (flips to "Update available" once

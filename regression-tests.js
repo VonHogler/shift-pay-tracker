@@ -277,6 +277,39 @@ test('Holiday date recognition → all four qualifying holidays for a sample yea
   assert.ok(!app.isHolidayDate('2026-05-17'), 'the Sunday after Mother\'s Day should not be a holiday');
 });
 
+// ── Install gate (onboarding, not payroll, but cheap to lock down) ──
+const UA = {
+  iosSafari:   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  iosChrome:   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/138.0.0.0 Mobile/15E148 Safari/604.1',
+  iosFacebook: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/500.0.0.0]',
+  ipadOS:      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
+  android:     'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
+  androidIG:   'Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/138.0.0.0 Mobile Safari/537.36 Instagram 350.0.0.0',
+  desktop:     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+};
+
+test('Install gate → user agent picks the right screen', () => {
+  const d = app.detectInstallEnv;
+  assert.strictEqual(d(UA.iosFacebook, 'iPhone', 5, false), 'inapp');
+  assert.strictEqual(d(UA.androidIG, 'Linux armv8l', 5, true), 'inapp');
+  assert.strictEqual(d(UA.iosSafari, 'iPhone', 5, false), 'ios-safari');
+  assert.strictEqual(d(UA.iosChrome, 'iPhone', 5, false), 'ios-other');
+  assert.strictEqual(d(UA.ipadOS, 'MacIntel', 5, false), 'ios-safari');
+  assert.strictEqual(d(UA.ipadOS, 'MacIntel', 0, false), 'desktop', 'a real Mac (no touch) is desktop');
+  assert.strictEqual(d(UA.android, 'Linux armv8l', 5, true), 'android-prompt');
+  assert.strictEqual(d(UA.android, 'Linux armv8l', 5, false), 'android-manual');
+  assert.strictEqual(d(UA.desktop, 'Win32', 0, true), 'desktop');
+});
+
+test('Install gate → only for new, non-installed, non-skipped phone visitors', () => {
+  const g = app.shouldShowInstallGate;
+  assert.strictEqual(g(false, false, false, 'ios-safari'), true);
+  assert.strictEqual(g(true,  false, false, 'ios-safari'), false, 'existing settings: no gate');
+  assert.strictEqual(g(false, true,  false, 'android-manual'), false, 'running installed: wizard instead');
+  assert.strictEqual(g(false, false, true,  'inapp'), false, 'already skipped: wizard instead');
+  assert.strictEqual(g(false, false, false, 'desktop'), false, 'desktop: wizard instead');
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════
