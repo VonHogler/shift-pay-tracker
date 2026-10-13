@@ -77,6 +77,26 @@
   .metric-value span { font-size: 13px; font-weight: 400; }
   .metric-value.green { color: #0F6E56; }
   .metric-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+  /* Gross-only hint on the calendar card: tappable, opens Settings deductions.
+     Negative side/bottom margins let the tap area use the card's padding. */
+  .metric-hint-btn {
+    display: block;
+    width: calc(100% + 1.5rem);
+    min-height: 44px;
+    margin: 2px -0.75rem -0.75rem;
+    padding: 8px 0.75rem 10px;
+    background: none;
+    border: none;
+    border-radius: 0 0 10px 10px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #0F6E56;
+    cursor: pointer;
+  }
+  .metric-hint-btn:active { background: #ecece5; }
 
   /* ── Calendar card ── */
   .card {
@@ -1412,7 +1432,7 @@
         <div class="metric-label" id="metric-net-label">Est. net</div>
         <div class="metric-value green" id="metric-net">—</div>
         <div class="metric-sub" id="metric-pay-date">—</div>
-        <div class="metric-sub" id="metric-gross-only-hint" style="display:none;">Add deductions in Settings to see net</div>
+        <button type="button" class="metric-hint-btn" id="metric-gross-only-hint" style="display:none;" onclick="goToDeductions()">Add deductions to see net ›</button>
       </div>
     </div>
 
@@ -2548,7 +2568,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.8.6"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.8.7"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
