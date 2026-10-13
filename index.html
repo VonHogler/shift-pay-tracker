@@ -1289,6 +1289,20 @@
     line-height: 1.5;
   }
 
+  /* ── Gross-only mode (deductions skipped in setup) ── */
+  .gross-only-card {
+    background: #f5f5f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: #666660;
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+  .gross-only-card .wizard-next-btn { width: 100%; margin-top: 10px; padding: 9px 0; font-size: 13px; }
+  .wizard-error { font-size: 12px; color: #A32D2D; margin-top: 8px; line-height: 1.45; }
+  .wizard-error:empty { display: none; }
+
   /* ── Install gate (shown before the wizard on phones, not installed) ── */
   .gate-logo { height: 30px; width: auto; display: block; margin: 0 auto 1.25rem; }
   .gate-screen { display: none; }
@@ -1369,9 +1383,10 @@
         <div class="metric-sub" id="metric-period-label">—</div>
       </div>
       <div class="metric">
-        <div class="metric-label">Est. net</div>
+        <div class="metric-label" id="metric-net-label">Est. net</div>
         <div class="metric-value green" id="metric-net">—</div>
         <div class="metric-sub" id="metric-pay-date">—</div>
+        <div class="metric-sub" id="metric-gross-only-hint" style="display:none;">Add deductions in Settings to see net</div>
       </div>
     </div>
 
@@ -1554,8 +1569,14 @@
       <div class="bid-day-row"><span class="bid-day-name off" id="lbl-next-6">Sat</span><input type="time" class="bid-time-input off-day" id="s-bid-next-times-6" value=""></div>
     </div>
 
+    <!-- Gross-only note: visible only while net pay is hidden -->
+    <div class="gross-only-card" id="gross-only-settings-note" style="display:none;">
+      <div>Right now ShiftComp shows your gross pay only. Add your deductions below and tap Save settings to see an estimate of what lands in your account.</div>
+      <div style="margin-top:8px;">No deductions at all? <button class="wizard-skip-btn" onclick="showNetEstimate()">Show net estimate</button></div>
+    </div>
+
     <!-- Pre-Tax Deductions -->
-    <div class="settings-group">
+    <div class="settings-group" id="settings-deductions" style="scroll-margin-top: 12px;">
       <div class="settings-group-header">Pre-Tax Deductions (per period)</div>
       <div class="settings-row">
         <div class="settings-row-label">Medical</div>
@@ -2092,6 +2113,7 @@
         </div>
       </div>
 
+      <div class="wizard-error" id="wiz-err-2" role="alert"></div>
       <div class="wizard-nav">
         <button class="wizard-back-btn" onclick="wizBack()">Back</button>
         <button class="wizard-next-btn" onclick="wizNext()">Next →</button>
@@ -2121,6 +2143,7 @@
       </div>
       <div class="wizard-hint">Tip: shifts are always 8.5 hrs (8.0 paid). The end time is calculated automatically.</div>
 
+      <div class="wizard-error" id="wiz-err-3" role="alert"></div>
       <div class="wizard-nav">
         <button class="wizard-back-btn" onclick="wizBack()">Back</button>
         <button class="wizard-next-btn" onclick="wizNext()">Next →</button>
@@ -2132,6 +2155,11 @@
       <div class="wizard-icon">📋</div>
       <div class="wizard-title">Your deductions</div>
       <div class="wizard-desc">Enter your per-period deduction amounts. Find these on any recent pay stub. Leave anything at $0 if it doesn't apply to you.</div>
+
+      <div class="gross-only-card">
+        You can start with just your schedule. Until you add deductions, ShiftComp shows your gross pay only, not what lands in your account. You can add them anytime in Settings.
+        <div style="margin-top:6px;"><button class="wizard-skip-btn" onclick="wizSkipDeductions()">Skip for now</button></div>
+      </div>
 
       <div class="wizard-section-label">Pre-tax (reduces taxable income)</div>
       <div class="wizard-input-row">
@@ -2482,6 +2510,9 @@
   </div>
 </div>
 
+<!-- Offline indicator (must sit above the script so init() can find it) -->
+<div class="offline-bar" id="offline-bar">⚡ You're offline. Everything still works and saves on this phone.</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -2490,7 +2521,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.8.4"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.8.5"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -2535,6 +2566,10 @@ const DEFAULTS = {
   'fed-wh':             0,
   'ca-wh':              0,
   'wh-basis':           0,
+
+  // Gross-only mode: true ONLY when the user taps "Skip for now" on the
+  // wizard's deductions step. Missing key (every existing user) = net mode.
+  'gross-only':         false,
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -2774,6 +2809,7 @@ function loadSettings() {
 
   // Update withholding note to reflect saved filing status
   updateWithholdingNote();
+  updateGrossOnlyUI();
 }
 
 function updateWithholdingNote() {
@@ -2794,7 +2830,50 @@ function updateWithholdingNote() {
   }
 }
 
+// ── Gross-only mode helpers (pure, covered by regression-tests.js) ──
+function isGrossOnly(settings) {
+  return !!settings && settings['gross-only'] === true;
+}
+
+// Any deduction, tax rate or withholding amount above zero
+function hasAnyDeductions(settings) {
+  const keys = ['medical', 'dental', 'vision', 'add', '401k-pct',
+                '401k-loan', 'stock', 'union', 'other-aftertax',
+                'casdi', 'fed-wh', 'ca-wh'];
+  return keys.some(k => (parseFloat(settings && settings[k]) || 0) > 0);
+}
+
+// Value to store for 'gross-only' when Settings are saved: stays on only
+// while it was already on AND nothing has been entered yet.
+function resolveGrossOnlyOnSave(wasGrossOnly, newSettings) {
+  return !!wasGrossOnly && !hasAnyDeductions(newSettings);
+}
+
+function updateGrossOnlyUI() {
+  const box = document.getElementById('gross-only-settings-note');
+  if (box) box.style.display = isGrossOnly(getSettings()) ? '' : 'none';
+}
+
+// "Show net estimate" in Settings, for people with genuinely no deductions
+function showNetEstimate() {
+  const saved = JSON.parse(localStorage.getItem('shiftpay-settings') || '{}');
+  saved['gross-only'] = false;
+  localStorage.setItem('shiftpay-settings', JSON.stringify(saved));
+  updateGrossOnlyUI();
+  renderCalendarView();
+  updateMetrics();
+  showToast('Net estimate is on');
+}
+
+// Pay screen card button: jump to the deductions section of Settings
+function goToDeductions() {
+  switchTab('settings');
+  const el = document.getElementById('settings-deductions');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function saveSettings() {
+  const wasGrossOnly = isGrossOnly(getSettings());
   const data = {};
 
   // Scalar fields
@@ -2835,7 +2914,12 @@ function saveSettings() {
   const nextMonthEl = document.getElementById('s-bid-next-month');
   data['bid-next-month'] = nextMonthEl ? nextMonthEl.value.trim() : '';
 
+  // Gross-only has no input of its own: carry it over, and switch it off
+  // as soon as any deduction or withholding amount is entered.
+  data['gross-only'] = resolveGrossOnlyOnSave(wasGrossOnly, data);
+
   localStorage.setItem('shiftpay-settings', JSON.stringify(data));
+  updateGrossOnlyUI();
   showToast('Settings saved ✓');
   renderCalendarView();
   updateMetrics();
@@ -3552,6 +3636,10 @@ function updateMetrics() {
   document.getElementById('metric-period-label').textContent = period.label;
   document.getElementById('metric-pay-date').textContent     = period.payDate;
 
+  const grossOnly = isGrossOnly(settings);
+  document.getElementById('metric-net-label').textContent = grossOnly ? 'Est. gross' : 'Est. net';
+  document.getElementById('metric-gross-only-hint').style.display = grossOnly ? '' : 'none';
+
   if (Object.keys(periodShifts).length === 0) {
     document.getElementById('metric-hours').innerHTML = '— <span>hrs</span>';
     document.getElementById('metric-net').textContent = '—';
@@ -3562,9 +3650,15 @@ function updateMetrics() {
   const { gross, regHrs, otHrs, dtHrs } = calcGross(periodShifts, settings, rcd);
   const totalHrs = regHrs + otHrs + dtHrs;
   const isPeriod1 = viewDay <= 15;
-  const net = estimateNet(gross, settings, isPeriod1);
 
   document.getElementById('metric-hours').innerHTML = totalHrs.toFixed(1) + ' <span>hrs</span>';
+  if (grossOnly) {
+    // Same gross the Pay screen shows (shift differential rides on Period 1)
+    const shiftDiff = isPeriod1 ? calcShiftDifferential(settings).total : 0;
+    document.getElementById('metric-net').textContent = '$' + Math.round(gross + shiftDiff).toLocaleString();
+    return;
+  }
+  const net = estimateNet(gross, settings, isPeriod1);
   document.getElementById('metric-net').textContent = '$' + Math.round(net).toLocaleString();
 }
 
@@ -3644,6 +3738,22 @@ function renderPayScreen() {
                <span class="pay-row-label" style="font-weight:500;color:#1a1a18;">Gross pay</span>
                <span class="pay-row-value">${fmt(b.gross)}</span>
              </div>`;
+
+    // Gross-only mode: no tax/deduction rows and no net (not even a partial
+    // one with just OASDI/Medicare, which would look right but be wrong)
+    if (isGrossOnly(settings)) {
+      return `<div class="pay-period">
+        <div class="pay-period-header">
+          <span class="pay-period-title">${title}</span>
+          <span class="pay-period-date">${paidLabel}</span>
+        </div>
+        <div class="pay-rows">${rows}</div>
+        <div class="gross-only-card" style="margin:10px 14px 14px;">
+          Net pay is not shown yet. Add your deductions in Settings to see an estimate of what lands in your account.
+          <button class="wizard-next-btn" onclick="goToDeductions()">Add deductions</button>
+        </div>
+      </div>`;
+    }
 
     rows += deductRow('Health / Dental / Vision / AD&D', b.preTaxHDV);
     if (b.k401 > 0) rows += deductRow(`401(k) contribution (${settings['401k-pct']}%)`, b.k401);
@@ -4197,6 +4307,8 @@ function wizHide() {
 
 function wizGoTo(step) {
   wizStep = step;
+  wizShowError(2, '');
+  wizShowError(3, '');
 
   // Show/hide steps
   for (let i = 1; i <= 6; i++) {
@@ -4231,12 +4343,20 @@ function wizNext() {
   }
   if (wizStep === 2) {
     const rate = parseFloat(document.getElementById('w-rate-regular').value) || 0;
-    if (!rate) { showToast('Enter your hourly rate to continue'); return; }
+    if (!(rate > 0)) { wizShowError(2, 'Enter your current hourly rate to continue.'); return; }
     wizGoTo(3);
     return;
   }
   if (wizStep === 3) {
-    // Bid block is optional in terms of blocking — user may be setting up mid-block
+    // Schedule is required: a start date and at least one working day
+    const start = document.getElementById('w-bid-curr-start').value.trim();
+    const times = [];
+    for (let i = 0; i < 7; i++) {
+      const el = document.getElementById('w-bid-times-' + i);
+      times.push(el ? el.value : '');
+    }
+    const msg = wizBidStepError(start, times);
+    if (msg) { wizShowError(3, msg); return; }
     wizGoTo(4);
     return;
   }
@@ -4252,6 +4372,33 @@ function wizNext() {
 
 function wizBack() {
   if (wizStep > 1) wizGoTo(wizStep - 1);
+}
+
+function wizShowError(step, msg) {
+  const el = document.getElementById('wiz-err-' + step);
+  if (el) el.textContent = msg;
+}
+
+// Pure: message blocking the bid step, or '' if it's OK to continue
+function wizBidStepError(startDate, times) {
+  const hasStart = !!(startDate && String(startDate).trim());
+  const hasDay   = Array.isArray(times) && times.some(t => t && String(t).trim() !== '');
+  if (!hasStart && !hasDay) return 'Enter your bid start date and a start time for at least one day you work.';
+  if (!hasStart) return 'Enter your bid start date to continue.';
+  if (!hasDay)   return 'Enter a start time for at least one day you work.';
+  return '';
+}
+
+// "Skip for now" on the deductions step: skip deductions AND tax
+// calibration, save in gross-only mode, go to Done.
+function wizSkipDeductions() {
+  ['w-medical', 'w-dental', 'w-vision', 'w-add', 'w-401k-pct', 'w-401k-loan',
+   'w-stock', 'w-union', 'w-other-aftertax', 'w-casdi', 'w-fed-wh', 'w-ca-wh',
+   'w-wh-basis', 'w-filing-status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  wizSaveAndFinish(true);
 }
 
 function wizSkipTax() {
@@ -4271,7 +4418,7 @@ function wizBidTimeChange(i) {
   if (lbl) lbl.classList.toggle('off', isOff);
 }
 
-function wizSaveAndFinish() {
+function wizSaveAndFinish(grossOnly) {
   // Collect all wizard fields into settings format
   const data = {};
 
@@ -4314,6 +4461,9 @@ function wizSaveAndFinish() {
   data['fed-wh']   = parseFloat(document.getElementById('w-fed-wh').value)   || 0;
   data['ca-wh']    = parseFloat(document.getElementById('w-ca-wh').value)    || 0;
   data['wh-basis'] = parseFloat(document.getElementById('w-wh-basis').value) || 0;
+
+  // Only the deductions-step "Skip for now" turns on gross-only mode
+  data['gross-only'] = grossOnly === true;
 
   localStorage.setItem('shiftpay-settings', JSON.stringify(data));
 
@@ -4684,8 +4834,6 @@ function dismissUpdateBanner() {
   updateOnlineStatus(); // check immediately on load
 })();
 </script>
-<!-- Offline indicator -->
-<div class="offline-bar" id="offline-bar">⚡ You're offline — changes save locally and sync when you're back</div>
 
 </body>
 </html>

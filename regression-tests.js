@@ -310,6 +310,43 @@ test('Install gate → only for new, non-installed, non-skipped phone visitors',
   assert.strictEqual(g(false, false, false, 'desktop'), false, 'desktop: wizard instead');
 });
 
+// ── Gross-only mode (deductions skipped in setup) ─────────────────
+test('Gross-only → settings with no gross-only key stay in net mode (existing users)', () => {
+  const legacy = baseSettings({ medical: 120, 'fed-wh': 300 }); // no 'gross-only' key at all
+  assert.strictEqual(app.isGrossOnly(legacy), false);
+  assert.strictEqual(app.isGrossOnly({}), false);
+  assert.strictEqual(app.isGrossOnly(null), false);
+  // getSettings() fills the default for a stored object that predates the key
+  app.localStorage.setItem('shiftpay-settings', JSON.stringify(legacy));
+  assert.strictEqual(app.isGrossOnly(app.getSettings()), false);
+});
+
+test('Gross-only → true reports gross-only, false does not', () => {
+  assert.strictEqual(app.isGrossOnly(baseSettings({ 'gross-only': true })), true);
+  assert.strictEqual(app.isGrossOnly(baseSettings({ 'gross-only': false })), false);
+  assert.strictEqual(app.isGrossOnly(baseSettings({ 'gross-only': 'true' })), false, 'only a real boolean true counts');
+});
+
+test('Gross-only → saving any nonzero deduction or withholding clears it', () => {
+  const r = app.resolveGrossOnlyOnSave;
+  assert.strictEqual(r(true, baseSettings()), true, 'still nothing entered: stays gross-only');
+  for (const k of ['medical', 'dental', 'vision', 'add', '401k-pct', '401k-loan',
+                   'stock', 'union', 'other-aftertax', 'casdi', 'fed-wh', 'ca-wh']) {
+    assert.strictEqual(r(true, baseSettings({ [k]: 5 })), false, `${k} > 0 should clear gross-only`);
+  }
+  assert.strictEqual(r(false, baseSettings()), false, 'net-mode users never get switched into gross-only');
+});
+
+test('Wizard bid step → needs a start date and at least one working day', () => {
+  const e = app.wizBidStepError;
+  const blank = ['', '', '', '', '', '', ''];
+  const oneDay = ['', '08:00', '', '', '', '', ''];
+  assert.ok(e('', blank), 'empty step is blocked');
+  assert.ok(e('2026-10-04', blank), 'no working days is blocked');
+  assert.ok(e('', oneDay), 'no start date is blocked');
+  assert.strictEqual(e('2026-10-04', oneDay), '');
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════
