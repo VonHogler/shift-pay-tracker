@@ -1,6 +1,6 @@
 {
-  "name": "Shift Pay Tracker",
-  "short_name": "ShiftPay",
+  "name": "ShiftComp",
+  "short_name": "ShiftComp",
   "description": "Paycheck estimator and shift tracker for airline ground workers",
   "start_url": "/shift-pay-tracker/",
   "display": "standalone",

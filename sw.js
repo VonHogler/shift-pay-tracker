@@ -2,7 +2,7 @@
 // SW_VERSION is reported to the page (see 'message' handler below) so the
 // "Update available" banner/Settings line can show a real version number.
 // Bump this alongside APP_VERSION in index.html on every release.
-const SW_VERSION = '0.8.7';
+const SW_VERSION = '0.8.8';
 const CACHE_NAME = 'shiftpay-v1';
 const ASSETS = [
   '/shift-pay-tracker/',
