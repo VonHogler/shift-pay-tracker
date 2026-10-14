@@ -420,6 +420,56 @@ test('Tax bases → real stub (05/01–05/15/2026): FICA base 2929.43, OASDI 181
   assert.strictEqual(Math.round(b.medicare * 100) / 100, 42.48, `medicare expected 42.48, got ${b.medicare}`);
 });
 
+// ── HSA/FSA (pre-tax, Section 125) and Roth 401(k) (after tax) — Item 13 ──
+test('New deductions → missing hsa-fsa / roth-pct keys behave as 0 (existing users)', () => {
+  const legacy = taxSettings(0);                       // no hsa-fsa / roth-pct keys at all
+  assert.ok(!('hsa-fsa' in legacy) && !('roth-pct' in legacy));
+  const explicitZero = Object.assign({}, legacy, { 'hsa-fsa': 0, 'roth-pct': 0 });
+  const a = app.calcBreakdown(3000, legacy, 0);
+  const b = app.calcBreakdown(3000, explicitZero, 0);
+  for (const k of Object.keys(a)) assert.ok(closeEnough(a[k], b[k]), `${k}: ${a[k]} vs ${b[k]}`);
+  assert.ok(closeEnough(a.hsaFsa, 0) && closeEnough(a.roth, 0));
+  assert.ok(closeEnough(a.net, 2162.792775), `net expected 2162.79 (same as before), got ${a.net}`);
+  // getSettings() fills the new defaults as 0 for a stored object that predates them
+  app.localStorage.setItem('shiftpay-settings', JSON.stringify(legacy));
+  const filled = app.getSettings();
+  assert.strictEqual(filled['hsa-fsa'], 0);
+  assert.strictEqual(filled['roth-pct'], 0);
+});
+
+test('New deductions → HSA/FSA 100 lowers FICA base, income-tax base and net', () => {
+  const b = app.calcBreakdown(3000, Object.assign(taxSettings(0), { 'hsa-fsa': 100 }), 0);
+  // Both bases: 3000 - 270.45 - 100 = 2629.55
+  assert.ok(closeEnough(b.hsaFsa, 100), `hsaFsa expected 100, got ${b.hsaFsa}`);
+  assert.ok(closeEnough(b.preTaxHDV, 270.45), 'HSA/FSA must not be folded into preTaxHDV');
+  assert.ok(closeEnough(b.ficaBase, 2629.55), `ficaBase expected 2629.55, got ${b.ficaBase}`);
+  assert.ok(closeEnough(b.taxable, 2629.55), `taxable expected 2629.55, got ${b.taxable}`);
+  assert.ok(closeEnough(b.oasdi, 2629.55 * 0.062) && closeEnough(b.medicare, 2629.55 * 0.0145) && closeEnough(b.casdi, 2629.55 * 0.013));
+  assert.ok(closeEnough(b.fedWH, 200 * 2629.55 / 3000) && closeEnough(b.caWH, 50 * 2629.55 / 3000));
+  // 3000 - 270.45 - 100 - 175.3033 - 43.8258 - 163.0321 - 38.1285 - 34.1842 - 95
+  assert.ok(closeEnough(b.net, 2080.0761083), `net expected 2080.08, got ${b.net}`);
+});
+
+test('New deductions → Roth 5% lowers net by exactly 5% of gross, no tax changes', () => {
+  const b0 = app.calcBreakdown(3000, taxSettings(0), 0);
+  const b5 = app.calcBreakdown(3000, Object.assign(taxSettings(0), { 'roth-pct': 5 }), 0);
+  assert.ok(closeEnough(b5.roth, 150), `roth expected 150, got ${b5.roth}`);
+  assert.ok(closeEnough(b0.net - b5.net, 150), `net should drop by 150, dropped ${b0.net - b5.net}`);
+  for (const k of ['taxable', 'ficaBase', 'fedWH', 'caWH', 'oasdi', 'medicare', 'casdi', 'k401', 'preTaxHDV', 'hsaFsa']) {
+    assert.ok(closeEnough(b0[k], b5[k]), `${k} should not change: ${b0[k]} vs ${b5[k]}`);
+  }
+  // With a shift differential the 5% is taken from the full gross (3000 + 125)
+  const s = Object.assign(taxSettings(0), { 'roth-pct': 5 });
+  assert.ok(closeEnough(app.calcBreakdown(3000, s, 125).roth, 3125 * 0.05));
+});
+
+test('New deductions → hasAnyDeductions() sees HSA/FSA alone and Roth alone', () => {
+  assert.strictEqual(app.hasAnyDeductions(baseSettings({ 'hsa-fsa': 25 })), true);
+  assert.strictEqual(app.hasAnyDeductions(baseSettings({ 'roth-pct': 3 })), true);
+  assert.strictEqual(app.hasAnyDeductions(baseSettings()), false);
+  assert.strictEqual(app.resolveGrossOnlyOnSave(true, baseSettings({ 'roth-pct': 3 })), false);
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════

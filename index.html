@@ -311,6 +311,9 @@
     gap: 12px;
   }
   .settings-row:last-child { border-bottom: none; }
+  /* Keep the input box full size when a row has a long sub-label */
+  .settings-row > .input-prefix,
+  .settings-row > .input-suffix { flex-shrink: 0; }
   .settings-row-label {
     font-size: 13px;
     color: #1a1a18;
@@ -1650,6 +1653,13 @@
           <span>%</span>
         </div>
       </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">HSA / FSA / other pre-tax</div>
+          <div class="settings-row-sub">Health savings, flexible spending, commuter. Not 401(k).</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-hsa-fsa" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
     </div>
 
     <!-- After-Tax Deductions -->
@@ -1672,10 +1682,20 @@
       </div>
       <div class="settings-row">
         <div>
-          <div class="settings-row-label">Life ins &amp; other after-tax</div>
-          <div class="settings-row-sub">Combined total of remaining after-tax items</div>
+          <div class="settings-row-label">Other after-tax</div>
+          <div class="settings-row-sub">Life insurance, legal plan, garnishments, anything else after tax</div>
         </div>
         <div class="input-prefix"><span>$</span><input type="number" id="s-other-aftertax" value="" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Roth 401(k) contribution</div>
+          <div class="settings-row-sub">% of gross. After tax, so it does not lower your taxes.</div>
+        </div>
+        <div class="input-suffix">
+          <input type="number" id="s-roth-pct" value="" step="0.5" min="0" max="100" placeholder="0">
+          <span>%</span>
+        </div>
       </div>
     </div>
 
@@ -2275,13 +2295,14 @@
           </div>
         </div>
         <div class="wizard-field">
-          <label class="wizard-label">Life ins &amp; other</label>
+          <label class="wizard-label">Other after-tax</label>
           <div style="display:flex;align-items:center;background:#f5f5f0;border:0.5px solid #d8d8d0;border-radius:9px;overflow:hidden;">
             <span style="font-size:14px;color:#888880;padding:9px 0 9px 12px;">$</span>
             <input type="number" class="wizard-input" id="w-other-aftertax" step="0.01" min="0" placeholder="0.00" style="border:none;background:transparent;padding-left:4px;">
           </div>
         </div>
       </div>
+      <div class="wizard-hint">HSA, FSA and Roth 401(k) can be added later in Settings.</div>
 
       <div class="wizard-nav">
         <button class="wizard-back-btn" onclick="wizBack()">Back</button>
@@ -2568,7 +2589,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.8.9"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.9.0"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -2598,12 +2619,14 @@ const DEFAULTS = {
   'vision':             0,
   'add':                0,
   '401k-pct':           0,
+  'hsa-fsa':            0,    // HSA / FSA / commuter: lowers FICA, SDI and income-tax bases
 
   // After-tax deductions (per period)
   '401k-loan':          0,
   'stock':              0,
   'union':              0,
   'other-aftertax':     0,
+  'roth-pct':           0,    // Roth 401(k), % of gross, after tax (lowers no tax base)
 
   // Tax rates
   'casdi':              0,    // varies by state — user enters their own rate
@@ -2884,8 +2907,8 @@ function isGrossOnly(settings) {
 
 // Any deduction, tax rate or withholding amount above zero
 function hasAnyDeductions(settings) {
-  const keys = ['medical', 'dental', 'vision', 'add', '401k-pct',
-                '401k-loan', 'stock', 'union', 'other-aftertax',
+  const keys = ['medical', 'dental', 'vision', 'add', '401k-pct', 'hsa-fsa',
+                '401k-loan', 'stock', 'union', 'other-aftertax', 'roth-pct',
                 'casdi', 'fed-wh', 'ca-wh'];
   return keys.some(k => (parseFloat(settings && settings[k]) || 0) > 0);
 }
@@ -3349,16 +3372,17 @@ function calcBreakdown(gross, settings, shiftDiff = 0) {
   const k401      = totalGross * (s['401k-pct'] || 0) / 100;
   const preTaxHDV = (s['medical'] || 0) + (s['dental'] || 0)
                   + (s['vision'] || 0) + (s['add'] || 0);
-  const preTax  = preTaxHDV + k401;
+  const hsaFsa    = s['hsa-fsa'] || 0;   // Section 125 like HDV, kept as its own line
+  const preTax  = preTaxHDV + hsaFsa + k401;
 
   // Two different wage bases (matches a real Southwest stub to the penny):
   // - Income-tax base: gross minus ALL pre-tax deductions, 401(k) included.
   //   Drives federal/state withholding scaling (unchanged).
   // - Social Security / Medicare / state disability base: gross minus only
-  //   the health-type deductions (medical, dental, vision, AD&D). A 401(k)
-  //   contribution does NOT lower these.
+  //   the health-type deductions (medical, dental, vision, AD&D, HSA/FSA).
+  //   A 401(k) contribution does NOT lower these.
   const taxable  = Math.max(0, totalGross - preTax);
-  const ficaBase = Math.max(0, totalGross - preTaxHDV);
+  const ficaBase = Math.max(0, totalGross - preTaxHDV - hsaFsa);
 
   const basis = s['wh-basis'] || totalGross || 1;
   const scale = taxable / basis;
@@ -3373,12 +3397,13 @@ function calcBreakdown(gross, settings, shiftDiff = 0) {
   const stock    = s['stock']          || 0;
   const union    = s['union']          || 0;
   const otherAT  = s['other-aftertax'] || 0;
-  const afterTax = loan + stock + union + otherAT;
+  const roth     = totalGross * (s['roth-pct'] || 0) / 100;   // after tax: lowers nothing
+  const afterTax = loan + stock + union + otherAT + roth;
 
   const net = Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
 
-  return { gross: totalGross, baseGross: gross, shiftDiff, preTaxHDV, k401, taxable, ficaBase,
-           fedWH, caWH, oasdi, medicare, casdi, loan, stock, union, otherAT, net };
+  return { gross: totalGross, baseGross: gross, shiftDiff, preTaxHDV, hsaFsa, k401, taxable, ficaBase,
+           fedWH, caWH, oasdi, medicare, casdi, loan, roth, stock, union, otherAT, net };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3793,6 +3818,7 @@ function renderPayScreen() {
     }
 
     rows += deductRow('Health / Dental / Vision / AD&D', b.preTaxHDV);
+    if (b.hsaFsa > 0) rows += deductRow('HSA / FSA / other pre-tax', b.hsaFsa);
     if (b.k401 > 0) rows += deductRow(`401(k) contribution (${settings['401k-pct']}%)`, b.k401);
     rows += deductRow('Federal withholding', b.fedWH);
     rows += deductRow('State withholding', b.caWH);
@@ -3800,9 +3826,10 @@ function renderPayScreen() {
     rows += deductRow('Medicare', b.medicare);
     rows += deductRow('State disability / SUI', b.casdi);
     if (b.loan    > 0) rows += deductRow('401(k) loan payment', b.loan);
+    if (b.roth    > 0) rows += deductRow(`Roth 401(k) contribution (${settings['roth-pct']}%)`, b.roth);
     if (b.stock   > 0) rows += deductRow('Stock purchase plan', b.stock);
     if (b.union   > 0) rows += deductRow('Union dues', b.union);
-    if (b.otherAT > 0) rows += deductRow('Life ins & other after-tax', b.otherAT);
+    if (b.otherAT > 0) rows += deductRow('Other after-tax', b.otherAT);
 
     rows += `<div class="pay-row total" style="border-top:0.5px solid #e0e0d8;margin-top:2px;padding-top:9px;">
                <span class="pay-row-label">Est. net pay</span>
