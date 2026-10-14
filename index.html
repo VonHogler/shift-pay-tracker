@@ -2568,7 +2568,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.8.8"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.8.9"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -3334,28 +3334,10 @@ function calcGross(shifts, settings, rateChangeDate) {
 // NET PAY ESTIMATE (for metric cards — quick path)
 // ═══════════════════════════════════════════════════════════════
 function estimateNet(gross, settings, isPeriod1 = false) {
-  const s = settings;
-  // Shift differential is paid once per month on Period 1 paycheck
+  // Shift differential is paid once per month on Period 1 paycheck.
+  // One source of truth for the net math: the Pay screen's calcBreakdown().
   const shiftDiff = isPeriod1 ? calcShiftDifferential(settings).total : 0;
-  const totalGross = gross + shiftDiff;
-
-  const preTax  = (s['medical'] || 0) + (s['dental'] || 0) + (s['vision'] || 0)
-                + (s['add'] || 0) + (totalGross * (s['401k-pct'] || 0) / 100);
-  const taxable = Math.max(0, totalGross - preTax);
-
-  const basis = s['wh-basis'] || totalGross || 1;
-  const scale = taxable / basis;
-  const fedWH = (s['fed-wh'] || 0) * scale;
-  const caWH  = (s['ca-wh']  || 0) * scale;
-
-  const oasdi    = taxable * OASDI_RATE / 100;
-  const medicare = taxable * MEDICARE_RATE / 100;
-  const casdi    = taxable * (s['casdi']    || 0) / 100;
-
-  const afterTax = (s['401k-loan'] || 0) + (s['stock'] || 0)
-                 + (s['union'] || 0) + (s['other-aftertax'] || 0);
-
-  return Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
+  return calcBreakdown(gross, settings, shiftDiff).net;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3368,16 +3350,24 @@ function calcBreakdown(gross, settings, shiftDiff = 0) {
   const preTaxHDV = (s['medical'] || 0) + (s['dental'] || 0)
                   + (s['vision'] || 0) + (s['add'] || 0);
   const preTax  = preTaxHDV + k401;
-  const taxable = Math.max(0, totalGross - preTax);
+
+  // Two different wage bases (matches a real Southwest stub to the penny):
+  // - Income-tax base: gross minus ALL pre-tax deductions, 401(k) included.
+  //   Drives federal/state withholding scaling (unchanged).
+  // - Social Security / Medicare / state disability base: gross minus only
+  //   the health-type deductions (medical, dental, vision, AD&D). A 401(k)
+  //   contribution does NOT lower these.
+  const taxable  = Math.max(0, totalGross - preTax);
+  const ficaBase = Math.max(0, totalGross - preTaxHDV);
 
   const basis = s['wh-basis'] || totalGross || 1;
   const scale = taxable / basis;
   const fedWH = (s['fed-wh'] || 0) * scale;
   const caWH  = (s['ca-wh']  || 0) * scale;
 
-  const oasdi    = taxable * OASDI_RATE / 100;
-  const medicare = taxable * MEDICARE_RATE / 100;
-  const casdi    = taxable * (s['casdi']    || 0) / 100;
+  const oasdi    = ficaBase * OASDI_RATE / 100;
+  const medicare = ficaBase * MEDICARE_RATE / 100;
+  const casdi    = ficaBase * (s['casdi']    || 0) / 100;
 
   const loan     = s['401k-loan']      || 0;
   const stock    = s['stock']          || 0;
@@ -3387,7 +3377,7 @@ function calcBreakdown(gross, settings, shiftDiff = 0) {
 
   const net = Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
 
-  return { gross: totalGross, baseGross: gross, shiftDiff, preTaxHDV, k401, taxable,
+  return { gross: totalGross, baseGross: gross, shiftDiff, preTaxHDV, k401, taxable, ficaBase,
            fedWH, caWH, oasdi, medicare, casdi, loan, stock, union, otherAT, net };
 }
 

@@ -347,6 +347,79 @@ test('Wizard bid step → needs a start date and at least one working day', () =
   assert.strictEqual(e('2026-10-04', oneDay), '');
 });
 
+// ── Tax bases: 401(k) lowers income-tax wages, NOT Social Security /
+//    Medicare / state disability wages (Item 12) ─────────────────────
+// Hand-computed reference settings (not copied from app output):
+//   gross 3000.00, medical 249 + dental 9 + vision 10.31 + AD&D 2.14 = 270.45
+//   withholding calibrated from a 3000.00 stub: fed 200, state 50
+//   SDI 1.3%, after-tax: union 40 + stock 20 + 401k loan 30 + other 5 = 95
+function taxSettings(k401pct) {
+  return baseSettings({
+    medical: 249, dental: 9, vision: 10.31, add: 2.14, '401k-pct': k401pct,
+    casdi: 1.3, 'fed-wh': 200, 'ca-wh': 50, 'wh-basis': 3000,
+    union: 40, stock: 20, '401k-loan': 30, 'other-aftertax': 5,
+  });
+}
+
+test('Tax bases → 401(k) 0% vs 7%: OASDI/Medicare/SDI identical, income-tax side differs', () => {
+  const b0 = app.calcBreakdown(3000, taxSettings(0), 0);
+  const b7 = app.calcBreakdown(3000, taxSettings(7), 0);
+  // FICA / SDI base = 3000 - 270.45 = 2729.55 in both cases
+  assert.ok(closeEnough(b0.ficaBase, 2729.55) && closeEnough(b7.ficaBase, 2729.55), `ficaBase ${b0.ficaBase} / ${b7.ficaBase}`);
+  assert.ok(closeEnough(b0.oasdi, 2729.55 * 0.062) && closeEnough(b7.oasdi, b0.oasdi), `oasdi ${b0.oasdi} / ${b7.oasdi}`);
+  assert.ok(closeEnough(b0.medicare, 2729.55 * 0.0145) && closeEnough(b7.medicare, b0.medicare), `medicare ${b0.medicare} / ${b7.medicare}`);
+  assert.ok(closeEnough(b0.casdi, 2729.55 * 0.013) && closeEnough(b7.casdi, b0.casdi), `casdi ${b0.casdi} / ${b7.casdi}`);
+  // Income-tax side: 7% of 3000 = 210 comes off taxable wages only
+  assert.ok(closeEnough(b0.k401, 0) && closeEnough(b7.k401, 210), `k401 ${b0.k401} / ${b7.k401}`);
+  assert.ok(closeEnough(b0.taxable, 2729.55) && closeEnough(b7.taxable, 2519.55), `taxable ${b0.taxable} / ${b7.taxable}`);
+  assert.ok(closeEnough(b0.fedWH, 200 * 2729.55 / 3000) && closeEnough(b7.fedWH, 200 * 2519.55 / 3000), `fedWH ${b0.fedWH} / ${b7.fedWH}`);
+  assert.ok(closeEnough(b0.caWH, 50 * 2729.55 / 3000) && closeEnough(b7.caWH, 50 * 2519.55 / 3000), `caWH ${b0.caWH} / ${b7.caWH}`);
+});
+
+test('Tax bases → with 401(k) at 0%, net is unchanged from the old formula', () => {
+  // Old and new formulas agree whenever 401(k) is 0, so this is the
+  // hand-computed net either way:
+  //   3000 - 270.45 - 181.97 (fed) - 45.4925 (state) - 169.2321 (OASDI)
+  //        - 39.578475 (Medicare) - 35.48415 (SDI) - 95 (after-tax) = 2162.792775
+  const b = app.calcBreakdown(3000, taxSettings(0), 0);
+  assert.ok(closeEnough(b.net, 2162.792775), `net expected 2162.79, got ${b.net}`);
+  // And with 7%: 3000 - 270.45 - 210 - 167.97 - 41.9925 - 169.2321 - 39.578475 - 35.48415 - 95
+  const b7 = app.calcBreakdown(3000, taxSettings(7), 0);
+  assert.ok(closeEnough(b7.net, 1970.292775), `net (7%) expected 1970.29, got ${b7.net}`);
+});
+
+test('Tax bases → estimateNet() always equals calcBreakdown().net', () => {
+  // 1) 401(k) 0%, Period 2 (no differential)
+  let s = taxSettings(0);
+  assert.ok(closeEnough(app.estimateNet(3000, s, false), app.calcBreakdown(3000, s, 0).net));
+  // 2) 401(k) 7%, Period 2
+  s = taxSettings(7);
+  assert.ok(closeEnough(app.estimateNet(2875.5, s, false), app.calcBreakdown(2875.5, s, 0).net));
+  // 3) Period 1 with a shift differential (04:30 starts = Section G $100,
+  //    plus one 13:00 start = a second start-time group, Section H $25)
+  s = taxSettings(6);
+  s['bid-curr-times'] = ['', '04:30', '04:30', '04:30', '04:30', '13:00', ''];
+  const diff = app.calcShiftDifferential(s).total;
+  assert.ok(diff > 0, `expected a shift differential, got ${diff}`);
+  assert.ok(closeEnough(app.estimateNet(3100, s, true), app.calcBreakdown(3100, s, diff).net),
+    `estimateNet ${app.estimateNet(3100, s, true)} vs calcBreakdown ${app.calcBreakdown(3100, s, diff).net}`);
+  // 4) Gross-only style settings (nothing entered) still agree
+  s = baseSettings();
+  assert.ok(closeEnough(app.estimateNet(1500, s, false), app.calcBreakdown(1500, s, 0).net));
+});
+
+test('Tax bases → real stub (05/01–05/15/2026): FICA base 2929.43, OASDI 181.62, Medicare 42.48', () => {
+  // Stub: gross 3199.88, medical 249.00, dental 9.00, vision 10.31, AD&D 2.14.
+  // The stub's own FICA base is 3031.98 (OASDI 187.98, Medicare 43.97)
+  // because it also includes 102.55 of imputed income (employer-paid
+  // life insurance), which ShiftComp does not model yet. Without it:
+  //   3199.88 - 270.45 = 2929.43
+  const b = app.calcBreakdown(3199.88, baseSettings({ medical: 249, dental: 9, vision: 10.31, add: 2.14, '401k-pct': 0 }), 0);
+  assert.ok(closeEnough(b.ficaBase, 2929.43), `ficaBase expected 2929.43, got ${b.ficaBase}`);
+  assert.strictEqual(Math.round(b.oasdi * 100) / 100, 181.62, `oasdi expected 181.62, got ${b.oasdi}`);
+  assert.strictEqual(Math.round(b.medicare * 100) / 100, 42.48, `medicare expected 42.48, got ${b.medicare}`);
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════
