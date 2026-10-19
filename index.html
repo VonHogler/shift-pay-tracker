@@ -341,7 +341,7 @@
     border-color: #1a1a18;
     background: #fff;
   }
-  .settings-input.wide { width: 130px; }
+  .settings-input.wide { width: 130px; flex-shrink: 0; } /* keep full width beside long labels */
   .input-prefix {
     display: flex;
     align-items: center;
@@ -424,7 +424,8 @@
     border: 0.5px solid #d8d8d0;
     border-radius: 7px;
     padding: 4px 8px;
-    width: 90px;
+    width: 116px; /* fits the AM/PM marker at phone width */
+    flex-shrink: 0;
     text-align: center;
   }
   .bid-time-input:focus { outline: none; border-color: #1a1a18; background: #fff; }
@@ -1863,13 +1864,13 @@
         <div class="help-step"><span class="help-step-num">→</span><div><strong>Start times per day</strong> — enter your scheduled shift start time for each working day. Leave a day blank if it's your day off. Example: if you work Mon–Fri starting at 2:00 PM, enter 14:00 for Mon through Fri and leave Sat and Sun blank.</div></div>
 
         <div class="help-subsection">Deductions</div>
-        <p style="font-size:13px;color:#666660;margin-bottom:8px;">These come straight off your pay stub. Look for the "Deductions" section. Enter each amount <strong>per pay period</strong> (not per month — Southwest pays twice a month).</p>
+        <p style="font-size:13px;color:#666660;margin-bottom:8px;">These come straight off your pay stub. Look for the "Deductions" section. Enter each amount <strong>per pay period</strong> (not per month, since you get paid twice a month).</p>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>Medical / Dental / Vision</strong> — pre-tax health deductions. Look for "MED," "DENT," "VIS" or similar in the pre-tax deductions section of your stub.</div></div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>AD&amp;D</strong> — accidental death &amp; dismemberment insurance. Often listed as "ADD" or "AD&amp;D" in pre-tax deductions. Enter 0 if you don't have it.</div></div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>401(k) contribution %</strong> — the percentage of your gross pay going into your retirement account each period. Look for "401K" or "RETIREMENT" in the pre-tax section.</div></div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>401(k) loan payment</strong> — if you have a 401(k) loan, this is the flat repayment amount each period. It's an after-tax deduction — separate from your contribution. Look for "401K LOAN" in after-tax deductions.</div></div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>Stock purchase plan</strong> — if you participate in an employee stock plan, enter the flat amount deducted each period.</div></div>
-        <div class="help-step"><span class="help-step-num">→</span><div><strong>Union dues</strong> — your TWU dues per period. Look for "UNION DUES" or "TWU" in after-tax deductions.</div></div>
+        <div class="help-step"><span class="help-step-num">→</span><div><strong>Union dues</strong> — your union dues per period. Look for "UNION DUES" or your union's name in after-tax deductions.</div></div>
         <div class="help-step"><span class="help-step-num">→</span><div><strong>Life ins &amp; other</strong> — combine any remaining after-tax deductions here (supplemental life insurance, etc.).</div></div>
 
         <div class="help-subsection">Tax calibration</div>
@@ -2434,7 +2435,7 @@
         <div style="font-size:12px;color:#888880;margin-bottom:10px;">Share it with your crew — it's free for everyone.</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <div id="wiz-share-text" style="flex:1;font-size:11px;color:#666660;background:#fff;border:0.5px solid #d8d8d0;border-radius:7px;padding:7px 10px;line-height:1.5;">
-            Hey, ShiftComp estimates your Southwest paycheck before it hits your account — check it out: https://vonhogler.github.io/shift-pay-tracker/
+            Hey, ShiftComp estimates your paycheck before it hits your account. Check it out: https://vonhogler.github.io/shift-pay-tracker/
           </div>
           <button onclick="wizCopyShare()" style="font-size:12px;font-weight:600;font-family:inherit;background:#1a1a18;color:#fff;border:none;border-radius:7px;padding:8px 12px;cursor:pointer;white-space:nowrap;" id="wiz-copy-btn">
             Copy
@@ -2589,7 +2590,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.9.0"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.9.1"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -4536,7 +4537,7 @@ function wizSaveAndFinish(grossOnly) {
 }
 
 function wizCopyShare() {
-  const text = "Hey, ShiftComp estimates your Southwest paycheck before it hits your account — check it out: https://vonhogler.github.io/shift-pay-tracker/";
+  const text = "Hey, ShiftComp estimates your paycheck before it hits your account. Check it out: https://vonhogler.github.io/shift-pay-tracker/";
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('wiz-copy-btn');
     if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
