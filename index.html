@@ -1716,6 +1716,12 @@
       </div>
     </div>
 
+    <!-- Plain-language explainer for the tax boxes below -->
+    <div class="wiz-skip-card">
+      <div class="wiz-skip-card-title">No tax math needed</div>
+      <div class="wiz-skip-card-text">You only need a recent pay stub. Copy the dollar amounts it shows for federal tax, state tax and gross pay into the boxes below. ShiftComp works out your rates from those and adjusts them to each paycheck. Social Security and Medicare are filled in for you. For state disability, tap <strong>Use the dollar amount from my stub</strong> and it works out the percent.</div>
+    </div>
+
     <!-- Tax Rates -->
     <div class="settings-group">
       <div class="settings-group-header">Tax Rates</div>
@@ -1751,7 +1757,7 @@
         </div>
       </div>
       <div style="padding:0 14px 8px;">
-        <button class="wizard-skip-btn" id="sdi-helper-toggle" onclick="toggleSdiHelper()">Calculate it for me →</button>
+        <button class="wizard-skip-btn" id="sdi-helper-toggle" onclick="toggleSdiHelper()">Use the dollar amount from my stub →</button>
         <div id="sdi-helper" style="display:none; margin-top:8px;">
           <div class="settings-row">
             <div class="settings-row-label">Gross pay this period</div>
@@ -2340,8 +2346,9 @@
       <div class="wizard-title">Tax calibration</div>
       <div class="wizard-desc">For the best estimate, enter the withholding amounts from a recent pay stub. The app scales them to match your actual earnings each period.</div>
 
-      <div class="wizard-note">
-        ⚠ Federal and state withholding vary by filing status and W-4 elections. These are entered as calibration figures — not calculated from tax tables.
+      <div class="wiz-skip-card">
+        <div class="wiz-skip-card-title">No tax math needed</div>
+        <div class="wiz-skip-card-text">You only need a recent pay stub. Copy the dollar amounts it shows for federal tax, state tax and gross pay into the boxes below. ShiftComp works out your rates from those and adjusts them to each paycheck. Social Security and Medicare are filled in for you. For state disability, tap <strong>Use the dollar amount from my stub</strong> and it works out the percent.</div>
       </div>
 
       <div class="wizard-field">
@@ -2378,7 +2385,7 @@
         </div>
       </div>
       <div style="padding:2px 0 0;">
-        <button class="wizard-skip-btn" id="wiz-sdi-helper-toggle" onclick="toggleWizSdiHelper()">Calculate it for me →</button>
+        <button class="wizard-skip-btn" id="wiz-sdi-helper-toggle" onclick="toggleWizSdiHelper()">Use the dollar amount from my stub →</button>
         <div id="wiz-sdi-helper" style="display:none; margin-top:8px;">
           <div class="wizard-input-row">
             <div class="wizard-field">
