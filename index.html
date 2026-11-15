@@ -1931,7 +1931,7 @@
         <div class="help-step"><span class="help-step-num">4</span><div>Tap <strong>Save</strong>. The calendar updates immediately and pay totals recalculate.</div></div>
         <div class="help-step"><span class="help-step-num">5</span><div>To undo, tap the day again and tap <strong>Clear override</strong>. The day goes back to whatever your bid block says.</div></div>
 
-        <div class="help-note">Shifts are 8.5 hours scheduled but 8.0 hours paid — the unpaid 30-minute break is handled automatically. You never need to enter this yourself.</div>
+        <div class="help-note">Shifts are 8.5 hours scheduled but 8.0 hours paid — the unpaid 30-minute break is handled automatically. You never need to enter this yourself. When you enter a pickup, gave away or left early as shift time and it runs 4.5 hours or more, the unpaid 30-minute meal comes off that too. Overtime and double time keep every minute, since that meal is paid.</div>
       </div>
     </div>
 
@@ -4065,6 +4065,17 @@ function timeSelectOptions(selected) {
   return html;
 }
 
+// Paid hours for a shift-time block. Per the contract, a shift of 4.5 hrs
+// or more has an unpaid 30-minute meal (Meal Period), so pickups, gave
+// away and left early time ranges that long lose 0.5 hr. Overtime and
+// double time before or after a shift get a PAID meal (Rest Period), so
+// those keep the full span.
+function paidHoursForTimeBlock(type, start, end) {
+  const span = hoursBetween(start, end);
+  const hasUnpaidMeal = ['pickup', 'gave', 'early'].indexOf(type) !== -1 && span >= 4.5;
+  return hasUnpaidMeal ? Math.round((span - 0.5) * 100) / 100 : span;
+}
+
 // Hours between two "HH:MM" strings, handling an overnight crossover
 function hoursBetween(start, end) {
   if (!start || !end) return 0;
@@ -4120,7 +4131,7 @@ function updateRowTime(type, idx, which, val) {
   const row = blockState[type][idx];
   if (!row) return;
   row[which] = val || null;
-  if (row.start && row.end) row.hours = hoursBetween(row.start, row.end);
+  if (row.start && row.end) row.hours = paidHoursForTimeBlock(type, row.start, row.end);
   renderBlocks(type);
 }
 
@@ -4150,7 +4161,8 @@ function renderBlocks(type) {
       html += `<select class="block-time-select" onchange="updateRowTime('${type}',${idx},'start',this.value)">${timeSelectOptions(row.start)}</select>`;
       html += `<span class="block-time-sep">to</span>`;
       html += `<select class="block-time-select" onchange="updateRowTime('${type}',${idx},'end',this.value)">${timeSelectOptions(row.end)}</select>`;
-      html += `<span class="block-hrs-computed">${row.hours ? row.hours + 'h' : ''}</span>`;
+      const mealOff = row.start && row.end && row.hours && hoursBetween(row.start, row.end) - row.hours >= 0.49;
+      html += `<span class="block-hrs-computed">${row.hours ? row.hours + 'h' + (mealOff ? ' paid, 0.5 meal off' : '') : ''}</span>`;
       html += `<a class="entry-blocks-link" onclick="toggleRowMode('${type}',${idx})">hrs</a>`;
     } else {
       html += `<div class="entry-input-wrap block-hours-wrap"><input type="number" min="0" step="0.25" class="block-hours-input" value="${row.hours || ''}" placeholder="0" onchange="updateRowHours('${type}',${idx},this.value)"><span class="entry-unit">hrs</span></div>`;
@@ -4320,7 +4332,9 @@ function showDayDetail(dateStr) {
     blockState[t] = savedBlocks
       .filter(b => b && b.type === t)
       .map(b => ({
-        hours: b.hours || 0,
+        // Time ranges are re-measured with the current meal-break rule, so
+        // opening and saving an older entry brings it up to date
+        hours: (b.start && b.end) ? paidHoursForTimeBlock(t, b.start, b.end) : (b.hours || 0),
         start: b.start || null,
         end:   b.end   || null,
         mode:  (b.start && b.end) ? 'time' : 'hours',

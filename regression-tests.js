@@ -511,6 +511,24 @@ test('Guest passes → do not count as a deduction for gross-only mode', () => {
   assert.strictEqual(app.hasAnyDeductions(baseSettings({ 'guest-pass-tax': 30, 'guest-passes': { '2026-11-1': 3 } })), false);
 });
 
+// ── Meal break on shift-time entries (contract Meal Period / Rest Period) ──
+test('Meal break → pickup, gave and left-early ranges of 4.5 hrs+ lose the unpaid 30 min', () => {
+  const f = app.paidHoursForTimeBlock;
+  assert.strictEqual(f('pickup', '06:00', '14:30'), 8);      // full shift
+  assert.strictEqual(f('gave',   '04:30', '13:00'), 8);
+  assert.strictEqual(f('early',  '09:00', '14:30'), 5);      // left before the meal
+  assert.strictEqual(f('pickup', '22:00', '06:30'), 8);      // overnight
+  assert.strictEqual(f('pickup', '06:00', '10:30'), 4);      // exactly 4.5 counts
+  assert.strictEqual(f('pickup', '06:00', '10:15'), 4.25);   // under 4.5: no meal
+  assert.strictEqual(f('early',  '12:00', '14:30'), 2.5);
+});
+
+test('Meal break → overtime and double time keep every minute (paid meal)', () => {
+  const f = app.paidHoursForTimeBlock;
+  assert.strictEqual(f('ot', '13:00', '17:30'), 4.5);
+  assert.strictEqual(f('dt', '13:00', '21:30'), 8.5);
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════
