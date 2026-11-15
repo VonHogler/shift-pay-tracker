@@ -3340,6 +3340,29 @@ function calcShiftDifferential(settings) {
 // ═══════════════════════════════════════════════════════════════
 // GROSS PAY CALCULATION
 // ═══════════════════════════════════════════════════════════════
+// ── 1:00–5:00 AM shift premium (contract) ──
+// A shift that starts at or after 1:00 AM but before 5:00 AM pays time and
+// a half for the part worked before 5:00 AM. On the stub those hours show
+// as overtime, so they move from the Regular bucket to OT. This is on top
+// of the monthly inconvenience premium in calcShiftDifferential().
+function earlyWindowHours(start, maxHrs) {
+  if (!start) return 0;
+  const [h, m] = String(start).split(':').map(Number);
+  const mins = h * 60 + m;
+  if (!(mins >= 60 && mins < 300)) return 0;
+  return Math.max(0, Math.min((300 - mins) / 60, maxHrs || 0));
+}
+
+// Early-window hours for one day: the scheduled shift (capped at the hours
+// actually paid that day) plus any pickup entered as shift time.
+function calcEarlyHours(bidStart, baseHrs, blocks) {
+  let hrs = earlyWindowHours(bidStart, baseHrs);
+  (Array.isArray(blocks) ? blocks : []).forEach(b => {
+    if (b && b.type === 'pickup' && b.start && b.end) hrs += earlyWindowHours(b.start, b.hours || 0);
+  });
+  return hrs;
+}
+
 function calcGross(shifts, settings, rateChangeDate) {
   const regRate = settings['rate-regular']     || 0;
   const oldRate = settings['rate-regular-old'] || regRate;
@@ -3373,15 +3396,18 @@ function calcGross(shifts, settings, rateChangeDate) {
     // other day.
     const isHoliday   = isHolidayDate(dateStr);
     const straightHrs = base + pickupHrs;
-    const regPortion  = isHoliday ? 0 : straightHrs;
+    // 1–5 AM hours (not on a holiday, where they're already OT)
+    const earlyOT     = isHoliday ? 0
+                      : Math.min(straightHrs, calcEarlyHours(isOffDay ? null : bid.startTime, base, shift.blocks));
+    const regPortion  = isHoliday ? 0 : straightHrs - earlyOT;
     const holidayOT   = isHoliday ? straightHrs : 0;
 
     gross  += (regPortion * rate)
-            + (holidayOT * rate * otMult)
+            + ((holidayOT + earlyOT) * rate * otMult)
             + (ot * rate * otMult)
             + (dt * rate * dtMult);
     regHrs += regPortion;
-    otHrs  += ot + holidayOT;
+    otHrs  += ot + holidayOT + earlyOT;
     dtHrs  += dt;
   }
 
@@ -4296,10 +4322,13 @@ function showDayDetail(dateStr) {
     // Same reclassification calcGross() applies at the period level —
     // straight-time hours (base + pickup) move into the OT bucket on a
     // qualifying holiday instead of being paid as Regular.
-    const regPortion = isHoliday ? 0 : straightHrs;
+    const earlyOT    = isHoliday ? 0
+                     : Math.min(straightHrs, calcEarlyHours(isWorkday ? bid.startTime : null, baseHrs, override?.blocks));
+    if (earlyOT > 0) addRow('1–5 AM hours', earlyOT.toFixed(1) + ' hrs paid at ' + otMult + '×', '');
+    const regPortion = isHoliday ? 0 : straightHrs - earlyOT;
     const holidayOT  = isHoliday ? straightHrs : 0;
     const dayGross = (regPortion * rate)
-                   + (holidayOT * rate * otMult)
+                   + ((holidayOT + earlyOT) * rate * otMult)
                    + (otHrs * rate * otMult)
                    + (dtHrs * rate * dtMult);
     addRow('Est. gross', '$' + dayGross.toFixed(2), 'green');

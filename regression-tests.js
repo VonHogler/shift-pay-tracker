@@ -529,6 +529,49 @@ test('Meal break → overtime and double time keep every minute (paid meal)', ()
   assert.strictEqual(f('dt', '13:00', '21:30'), 8.5);
 });
 
+// ── 1:00–5:00 AM shift premium: those hours are paid as OT ────────
+test('1–5 AM → window hours by start time', () => {
+  const w = app.earlyWindowHours;
+  assert.strictEqual(w('04:30', 8), 0.5);
+  assert.strictEqual(w('01:00', 8), 4);
+  assert.strictEqual(w('03:15', 8), 1.75);
+  assert.strictEqual(w('00:30', 8), 0, 'before 1:00 AM is not in the window');
+  assert.strictEqual(w('05:00', 8), 0, '5:00 AM starts are not in the window');
+  assert.strictEqual(w('13:00', 8), 0);
+  assert.strictEqual(w('02:00', 1.5), 1.5, 'capped at the hours actually worked');
+  assert.strictEqual(w('', 8), 0);
+});
+
+test('1–5 AM → 4:30 AM scheduled day: 7.5 REG + 0.5 OT', () => {
+  const date = '2026-03-10';                            // Tuesday, not a holiday
+  const settings = useSettings(baseSettings({ 'bid-curr-times': ['04:30','04:30','04:30','04:30','04:30','04:30','04:30'] }));
+  const r = app.calcGross({ [date]: { otHrs: 0, dtHrs: 0, lwopHrs: 0 } }, settings, getNoRateChangeDateObj());
+  assert.ok(closeEnough(r.regHrs, 7.5), `regHrs expected 7.5, got ${r.regHrs}`);
+  assert.ok(closeEnough(r.otHrs, 0.5), `otHrs expected 0.5, got ${r.otHrs}`);
+  assert.ok(closeEnough(r.gross, 7.5 * RATE_NEW + 0.5 * RATE_NEW * 1.5), `gross ${r.gross}`);
+});
+
+test('1–5 AM → gave the whole shift away: no premium; holiday: no double count', () => {
+  const settings = useSettings(baseSettings({ 'bid-curr-times': ['02:00','02:00','02:00','02:00','02:00','02:00','02:00'] }));
+  const gave = app.calcGross({ '2026-03-10': { otHrs: 0, dtHrs: 0, lwopHrs: 0, gaveHrs: 8 } }, settings, getNoRateChangeDateObj());
+  assert.ok(closeEnough(gave.gross, 0) && closeEnough(gave.otHrs, 0), `gave ${JSON.stringify(gave)}`);
+  const hol = app.calcGross({ '2026-07-04': { otHrs: 0, dtHrs: 0, lwopHrs: 0 } }, settings, getNoRateChangeDateObj());
+  assert.ok(closeEnough(hol.otHrs, 8) && closeEnough(hol.regHrs, 0), 'holiday: all 8 straight hours OT, no extra');
+  assert.ok(closeEnough(hol.gross, 8 * RATE_NEW * 1.5));
+});
+
+test('1–5 AM → pickup entered as 3:00 AM shift time on a day off: 2 OT + 6 REG', () => {
+  const offDay = '2026-03-08';
+  const settings = useSettings(settingsWithDayOff(offDay));
+  const shift = { otHrs: 0, dtHrs: 0, lwopHrs: 0, pickupHrs: 8,
+                  blocks: [{ type: 'pickup', hours: 8, start: '03:00', end: '11:30' }] };
+  const r = app.calcGross({ [offDay]: shift }, settings, getNoRateChangeDateObj());
+  assert.ok(closeEnough(r.otHrs, 2) && closeEnough(r.regHrs, 6), JSON.stringify(r));
+  // Same pickup entered as plain hours (no start time): no way to know, no premium
+  const plain = app.calcGross({ [offDay]: { otHrs: 0, dtHrs: 0, lwopHrs: 0, pickupHrs: 8 } }, settings, getNoRateChangeDateObj());
+  assert.ok(closeEnough(plain.otHrs, 0) && closeEnough(plain.regHrs, 8));
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════
