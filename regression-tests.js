@@ -470,6 +470,47 @@ test('New deductions → hasAnyDeductions() sees HSA/FSA alone and Roth alone', 
   assert.strictEqual(app.resolveGrossOnlyOnSave(true, baseSettings({ 'roth-pct': 3 })), false);
 });
 
+// ── Guest passes: flat tax per round trip used in a pay period ────
+test('Guest passes → no trips entered changes nothing (existing users)', () => {
+  const s = taxSettings(0);
+  const a = app.calcBreakdown(3000, s, 0);
+  const b = app.calcBreakdown(3000, s, 0, 0);
+  for (const k of Object.keys(a)) assert.ok(closeEnough(a[k], b[k]), `${k}: ${a[k]} vs ${b[k]}`);
+  assert.ok(closeEnough(a.guestTax, 0) && closeEnough(a.net, 2162.792775));
+  // Stored settings that predate the feature: no trips for any period, $30 default
+  app.localStorage.setItem('shiftpay-settings', JSON.stringify(s));
+  const filled = app.getSettings();
+  assert.strictEqual(filled['guest-pass-tax'], 30);
+  assert.strictEqual(app.getGuestTrips(filled, '2026-11-1'), 0);
+});
+
+test('Guest passes → 2 round trips at $30 take $60 off net, nothing else', () => {
+  const b0 = app.calcBreakdown(3000, taxSettings(0), 0, 0);
+  const b2 = app.calcBreakdown(3000, taxSettings(0), 0, 2);
+  assert.ok(closeEnough(b2.guestTax, 60), `guestTax expected 60, got ${b2.guestTax}`);
+  assert.ok(closeEnough(b0.net - b2.net, 60), `net should drop by 60, dropped ${b0.net - b2.net}`);
+  for (const k of ['gross', 'taxable', 'ficaBase', 'fedWH', 'caWH', 'oasdi', 'medicare', 'casdi']) {
+    assert.ok(closeEnough(b0[k], b2[k]), `${k} should not change`);
+  }
+  // Custom amount and a one-way trip
+  assert.ok(closeEnough(app.calcBreakdown(3000, Object.assign(taxSettings(0), { 'guest-pass-tax': 25 }), 0, 1.5).guestTax, 37.5));
+  assert.ok(closeEnough(app.estimateNet(3000, taxSettings(0), false, 2), b2.net));
+});
+
+test('Guest passes → trips are looked up per pay period', () => {
+  assert.strictEqual(app.guestPeriodKey(2026, 10, 1), '2026-11-1');   // month is 0-indexed
+  assert.strictEqual(app.guestPeriodKey(2026, 0, 2), '2026-01-2');
+  const s = baseSettings({ 'guest-passes': { '2026-11-1': 2, '2026-11-2': 0.5 } });
+  assert.strictEqual(app.getGuestTrips(s, '2026-11-1'), 2);
+  assert.strictEqual(app.getGuestTrips(s, '2026-11-2'), 0.5);
+  assert.strictEqual(app.getGuestTrips(s, '2026-12-1'), 0);
+  assert.strictEqual(app.getGuestTrips(baseSettings(), '2026-11-1'), 0);
+});
+
+test('Guest passes → do not count as a deduction for gross-only mode', () => {
+  assert.strictEqual(app.hasAnyDeductions(baseSettings({ 'guest-pass-tax': 30, 'guest-passes': { '2026-11-1': 3 } })), false);
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUNNER
 // ═══════════════════════════════════════════════════════════════

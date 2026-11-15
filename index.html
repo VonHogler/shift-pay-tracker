@@ -280,6 +280,22 @@
   .pay-row-value.deduct { color: #993C1D; }
   .pay-row-value.net { color: #0F6E56; font-size: 15px; }
   .pay-row.total .pay-row-label { font-weight: 500; color: #1a1a18; }
+  /* Guest passes used, entered right on each pay period card */
+  .pay-row.guest-row { align-items: center; border-bottom: none; padding: 10px 0 12px; }
+  .pay-row.guest-row .pay-row-sub { display: block; font-size: 11px; color: #aaa; margin-top: 2px; }
+  .guest-input {
+    width: 64px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #1a1a18;
+    text-align: center;
+    background: #f5f5f0;
+    border: 0.5px solid #d8d8d0;
+    border-radius: 7px;
+    padding: 6px 4px;
+    flex-shrink: 0;
+  }
+  .guest-input:focus { outline: none; border-color: #1a1a18; background: #fff; }
 
   /* ── Screens ── */
   .screen { display: none; }
@@ -1779,6 +1795,13 @@
         </div>
         <div class="input-prefix"><span>$</span><input type="number" id="s-wh-basis" value="" step="1" min="0" placeholder="0.00"></div>
       </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Guest pass tax</div>
+          <div class="settings-row-sub">Taken out for each round trip flown. About $30 is typical.</div>
+        </div>
+        <div class="input-prefix"><span>$</span><input type="number" id="s-guest-pass-tax" value="" step="1" min="0" placeholder="0.00"></div>
+      </div>
     </div>
 
     <div class="settings-save-row" style="margin-bottom: 8px;">
@@ -2590,7 +2613,7 @@ const PAID_HRS      = 8.0;     // 8.5 scheduled, 0.5 unpaid break
 const OASDI_WAGE_CAP = 176100; // 2026 Social Security annual cap
 const OASDI_RATE    = 6.2;
 const MEDICARE_RATE = 1.45;
-const APP_VERSION   = "0.9.2"; // bump this + SW_VERSION in sw.js on every release
+const APP_VERSION   = "0.9.3"; // bump this + SW_VERSION in sw.js on every release
 
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS DEFAULTS — all empty/zero for new users
@@ -2637,6 +2660,12 @@ const DEFAULTS = {
   'fed-wh':             0,
   'ca-wh':              0,
   'wh-basis':           0,
+
+  // Guest passes: flat tax taken out per round trip flown, and the trips
+  // used in each pay period, keyed 'YYYY-MM-1' / 'YYYY-MM-2' (entered on
+  // the Pay screen). Neither counts as a deduction for gross-only mode.
+  'guest-pass-tax':     30,
+  'guest-passes':       {},
 
   // Gross-only mode: true ONLY when the user taps "Skip for now" on the
   // wizard's deductions step. Missing key (every existing user) = net mode.
@@ -2988,6 +3017,11 @@ function saveSettings() {
   // Gross-only has no input of its own: carry it over, and switch it off
   // as soon as any deduction or withholding amount is entered.
   data['gross-only'] = resolveGrossOnlyOnSave(wasGrossOnly, data);
+
+  // Guest passes per pay period are entered on the Pay screen, not here:
+  // carry them over untouched.
+  const savedGuest = JSON.parse(localStorage.getItem('shiftpay-settings') || '{}')['guest-passes'];
+  if (savedGuest && typeof savedGuest === 'object') data['guest-passes'] = savedGuest;
 
   localStorage.setItem('shiftpay-settings', JSON.stringify(data));
   updateGrossOnlyUI();
@@ -3357,17 +3391,36 @@ function calcGross(shifts, settings, rateChangeDate) {
 // ═══════════════════════════════════════════════════════════════
 // NET PAY ESTIMATE (for metric cards — quick path)
 // ═══════════════════════════════════════════════════════════════
-function estimateNet(gross, settings, isPeriod1 = false) {
+// ── Guest passes per pay period ──
+function guestPeriodKey(year, month0, periodNum) {
+  return year + '-' + pad2(month0 + 1) + '-' + periodNum;
+}
+function getGuestTrips(settings, key) {
+  const map = settings && settings['guest-passes'];
+  return (map && typeof map === 'object') ? (parseFloat(map[key]) || 0) : 0;
+}
+function setGuestTrips(key, value) {
+  const saved = JSON.parse(localStorage.getItem('shiftpay-settings') || '{}');
+  const map = (saved['guest-passes'] && typeof saved['guest-passes'] === 'object') ? saved['guest-passes'] : {};
+  const n = Math.max(0, Math.round((parseFloat(value) || 0) * 2) / 2);   // whole or half trips
+  if (n > 0) map[key] = n; else delete map[key];
+  saved['guest-passes'] = map;
+  localStorage.setItem('shiftpay-settings', JSON.stringify(saved));
+  renderPayScreen();
+  updateMetrics();
+}
+
+function estimateNet(gross, settings, isPeriod1 = false, guestTrips = 0) {
   // Shift differential is paid once per month on Period 1 paycheck.
   // One source of truth for the net math: the Pay screen's calcBreakdown().
   const shiftDiff = isPeriod1 ? calcShiftDifferential(settings).total : 0;
-  return calcBreakdown(gross, settings, shiftDiff).net;
+  return calcBreakdown(gross, settings, shiftDiff, guestTrips).net;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // FULL BREAKDOWN (for Pay screen — every line item)
 // ═══════════════════════════════════════════════════════════════
-function calcBreakdown(gross, settings, shiftDiff = 0) {
+function calcBreakdown(gross, settings, shiftDiff = 0, guestTrips = 0) {
   const s         = settings;
   const totalGross = gross + shiftDiff;
   const k401      = totalGross * (s['401k-pct'] || 0) / 100;
@@ -3401,10 +3454,14 @@ function calcBreakdown(gross, settings, shiftDiff = 0) {
   const roth     = totalGross * (s['roth-pct'] || 0) / 100;   // after tax: lowers nothing
   const afterTax = loan + stock + union + otherAT + roth;
 
-  const net = Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax);
+  // Guest passes: flat tax per round trip used this period (no cash paid)
+  const guestRate = s['guest-pass-tax'] != null ? (parseFloat(s['guest-pass-tax']) || 0) : 30;
+  const guestTax  = (guestTrips || 0) * guestRate;
+
+  const net = Math.max(0, totalGross - preTax - fedWH - caWH - oasdi - medicare - casdi - afterTax - guestTax);
 
   return { gross: totalGross, baseGross: gross, shiftDiff, preTaxHDV, hsaFsa, k401, taxable, ficaBase,
-           fedWH, caWH, oasdi, medicare, casdi, loan, roth, stock, union, otherAT, net };
+           fedWH, caWH, oasdi, medicare, casdi, loan, roth, stock, union, otherAT, guestTrips, guestTax, net };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3721,7 +3778,8 @@ function updateMetrics() {
     document.getElementById('metric-net').textContent = '$' + Math.round(gross + shiftDiff).toLocaleString();
     return;
   }
-  const net = estimateNet(gross, settings, isPeriod1);
+  const guestTrips = getGuestTrips(settings, guestPeriodKey(calYear, calMonth, isPeriod1 ? 1 : 2));
+  const net = estimateNet(gross, settings, isPeriod1, guestTrips);
   document.getElementById('metric-net').textContent = '$' + Math.round(net).toLocaleString();
 }
 
@@ -3780,7 +3838,8 @@ function renderPayScreen() {
     const { gross, regHrs, otHrs, dtHrs } = calcGross(periodShifts, settings, rcd);
     const isPeriod1  = periodNum === 1;
     const diff       = isPeriod1 ? calcShiftDifferential(settings) : { sectionG: 0, sectionH: 0, total: 0 };
-    const b = calcBreakdown(gross, settings, diff.total);
+    const guestKey = guestPeriodKey(calYear, calMonth, periodNum);
+    const b = calcBreakdown(gross, settings, diff.total, getGuestTrips(settings, guestKey));
     const hasOT = otHrs > 0;
     const hasDT = dtHrs > 0;
 
@@ -3826,6 +3885,9 @@ function renderPayScreen() {
     rows += deductRow('OASDI', b.oasdi);
     rows += deductRow('Medicare', b.medicare);
     rows += deductRow('State disability / SUI', b.casdi);
+    if (b.guestTax > 0) {
+      rows += deductRow(`Guest pass tax (${b.guestTrips} round trip${b.guestTrips === 1 ? '' : 's'})`, b.guestTax);
+    }
     if (b.loan    > 0) rows += deductRow('401(k) loan payment', b.loan);
     if (b.roth    > 0) rows += deductRow(`Roth 401(k) contribution (${settings['roth-pct']}%)`, b.roth);
     if (b.stock   > 0) rows += deductRow('Stock purchase plan', b.stock);
@@ -3835,6 +3897,15 @@ function renderPayScreen() {
     rows += `<div class="pay-row total" style="border-top:0.5px solid #e0e0d8;margin-top:2px;padding-top:9px;">
                <span class="pay-row-label">Est. net pay</span>
                <span class="pay-row-value net">${fmt(b.net)}</span>
+             </div>`;
+
+    // Guest passes used this period: entered here, once per period
+    const trips = getGuestTrips(settings, guestKey);
+    rows += `<div class="pay-row guest-row" style="border-top:0.5px solid #f0f0ea;">
+               <label class="pay-row-label" for="guest-${guestKey}">Guest passes used
+                 <span class="pay-row-sub">Round trips this period. A one-way is 0.5.</span></label>
+               <input type="number" class="guest-input" id="guest-${guestKey}" min="0" step="0.5" inputmode="decimal"
+                      placeholder="0" value="${trips || ''}" onchange="setGuestTrips('${guestKey}', this.value)">
              </div>`;
 
     return `<div class="pay-period">
